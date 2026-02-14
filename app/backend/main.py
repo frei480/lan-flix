@@ -141,5 +141,14 @@ async def search_videos(query: str, db: SessionDep):
     return [SearchResult(**result) for result in results]
 
 
+@app.delete("/clear-database/")
+async def clear_database(db: SessionDep):
+    """
+    Очищает таблицу videos в базе данных.
+    """
+    await crud.clear_database(db)
+    return {"message": "Database cleared successfully"}
+
+
 if __name__ == "__main__":
     uvicorn.run("app.backend.main:app", host="0.0.0.0", reload=True)
