@@ -28,13 +28,15 @@ services:
     ports:
       - "8000:8000" # Порт для доступа к FastAPI с хоста
     environment:
-      DB_USER: $DB_USER
-      DB_PASS: $DB_PASS
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
       DB_HOST: db
       DB_PORT: 5432
-      DB_NAME: test_us     
+      DB_NAME: ${DB_NAME}
       VIDEOS_DIR: /app/videos # Путь внутри контейнера, куда будет смонтирована папка с видео
       TRANSCRIPTIONS_DIR: /app/transcriptions # Путь внутри контейнера для транскрипций
+      username: ${username}
+      password: ${password}
     volumes:
       - ./videos:/app/videos # Монтируем локальную папку videos в контейнер
       - ./transcriptions:/app/transcriptions # Монтируем локальную папку transcriptions в контейнер

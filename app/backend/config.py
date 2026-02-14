@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pathlib import Path
+
 
 class ConfigBase(BaseSettings):
     model_config = SettingsConfigDict(
@@ -14,5 +14,6 @@ class ConfigBase(BaseSettings):
     password: str
     VIDEOS_DIR: str = "videos"
     TRANSCRIPTIONS_DIR: str = "transcriptions"
+
 
 cfg = ConfigBase()
