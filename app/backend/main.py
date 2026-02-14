@@ -7,6 +7,7 @@ from typing import Annotated, Any, Dict, Generator, List
 
 import uvicorn
 from fastapi import Depends, FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -28,6 +29,15 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Url shortener", lifespan=lifespan)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # server IP
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/health", status_code=200)
@@ -54,7 +64,7 @@ async def scan_and_load_videos(db: SessionDep):
 
         title = Path(filename).stem
 
-        transcription_filepath = os.path.join(cfg.TRANSCRIPTIONS_DIR, f"{title}.txt")
+        transcription_filepath = os.path.join(cfg.TRANSCRIPTIONS_DIR, f"{title}.md")
         transcription_content = None
         if os.path.exists(transcription_filepath):
             with open(transcription_filepath, "r", encoding="utf-8") as f:

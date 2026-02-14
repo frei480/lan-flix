@@ -24,7 +24,7 @@
 
     <script>
         // Изменяем базовый URL для запросов к бэкенду
-        const BACKEND_URL = 'http://backend:8000'; // 'backend' - это имя сервиса в docker-compose
+        const BACKEND_URL = '/api'; // Используем прокси через nginx
 
         document.addEventListener('DOMContentLoaded', fetchVideos);
 
