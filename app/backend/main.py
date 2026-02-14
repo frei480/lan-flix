@@ -3,7 +3,7 @@ import mimetypes
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import List, Generator, Dict, Any
+from typing import Annotated, Any, Dict, Generator, List
 
 import uvicorn
 from fastapi import Depends, FastAPI, HTTPException
@@ -12,11 +12,13 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.backend import crud
 from app.backend.config import cfg
-from app.backend.database import get_db
+from app.backend.database import get_session
 from app.backend.schemas import SearchResult, VideoCreate, VideoInDB, VideoUpdate
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
 
 @asynccontextmanager
@@ -34,7 +36,7 @@ def health_check():
 
 
 @app.post("/videos/scan-and-load/", response_model=List[VideoInDB])
-async def scan_and_load_videos(db: AsyncSession = Depends(get_db)):
+async def scan_and_load_videos(db: SessionDep):
     """
     Сканирует папки с видео и транскрипциями и загружает их метаданные в БД.
     Обновляет существующие записи, если транскрипция изменилась.
@@ -86,13 +88,13 @@ async def scan_and_load_videos(db: AsyncSession = Depends(get_db)):
 
 
 @app.get("/videos/", response_model=List[VideoInDB])
-async def read_videos(skip: int = 0, limit: int = 100, db: AsyncSession = Depends(get_db)):
+async def read_videos(db: SessionDep, skip: int = 0, limit: int = 100):
     videos = await crud.get_videos(db, skip=skip, limit=limit)
     return [VideoInDB.model_validate(video) for video in videos]
 
 
 @app.get("/videos/{video_id}", response_model=VideoInDB)
-async def read_video(video_id: int, db: AsyncSession = Depends(get_db)):
+async def read_video(video_id: int, db: SessionDep):
     db_video = await crud.get_video(db, video_id=video_id)
     if db_video is None:
         raise HTTPException(status_code=404, detail="Video not found")
@@ -100,7 +102,7 @@ async def read_video(video_id: int, db: AsyncSession = Depends(get_db)):
 
 
 @app.get("/videos/{video_id}/stream")
-async def stream_video(video_id: int, db: AsyncSession = Depends(get_db)):
+async def stream_video(video_id: int, db: SessionDep):
     db_video = await crud.get_video(db, video_id=video_id)
     if db_video is None:
         raise HTTPException(status_code=404, detail="Video not found")
@@ -121,7 +123,7 @@ async def stream_video(video_id: int, db: AsyncSession = Depends(get_db)):
 
 
 @app.get("/search/", response_model=List[SearchResult])
-async def search_videos(query: str, db: AsyncSession = Depends(get_db)):
+async def search_videos(query: str, db: SessionDep):
     if not query:
         raise HTTPException(status_code=400, detail="Search query cannot be empty")
 
@@ -130,4 +132,4 @@ async def search_videos(query: str, db: AsyncSession = Depends(get_db)):
 
 
 if __name__ == "__main__":
-    uvicorn.run("src.backend.main:app", host="0.0.0.0", reload=True)
+    uvicorn.run("app.backend.main:app", host="0.0.0.0", reload=True)
