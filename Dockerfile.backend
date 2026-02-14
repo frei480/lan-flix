@@ -1,0 +1,16 @@
+# Dockerfile.backend
+FROM python:3.13-slim
+
+WORKDIR /app
+
+# Копируем pyproject.toml и устанавливаем зависимости
+COPY pyproject.toml .
+RUN pip install --no-cache-dir -e .
+COPY alembic/ ./alembic/
+# Копируем остальное приложение
+COPY app/ ./app/
+
+EXPOSE 8000
+
+# Команда для запуска Миграций и Uvicorn
+CMD ["sh", "-c", "alembic upgrade head && uvicorn app.backend.main:app --host 0.0.0.0 --port 8000"]

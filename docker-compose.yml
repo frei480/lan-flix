@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:18-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+    ports:
+      - "5432:5432" # Опционально, если нужно обращаться к БД напрямую с хоста
+    volumes:
+      - pg_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - lanflix
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    restart: always
+    ports:
+      - "8000:8000" # Порт для доступа к FastAPI с хоста
+    environment:
+      DB_USER: $DB_USER
+      DB_PASS: $DB_PASS
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: test_us     
+      VIDEOS_DIR: /app/videos # Путь внутри контейнера, куда будет смонтирована папка с видео
+      TRANSCRIPTIONS_DIR: /app/transcriptions # Путь внутри контейнера для транскрипций
+    volumes:
+      - ./videos:/app/videos # Монтируем локальную папку videos в контейнер
+      - ./transcriptions:/app/transcriptions # Монтируем локальную папку transcriptions в контейнер
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - lanflix
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    restart: always
+    ports:
+      - "80:80" # Порт для доступа к фронтенду с хоста
+    depends_on:
+      - backend # Frontend зависит от backend, чтобы запросы к нему могли идти
+    networks:
+      - lanflix
+networks:
+  lanflix:
+    driver: bridge
+
+volumes:
+  pg_data:
