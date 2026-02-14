@@ -55,8 +55,8 @@ async def scan_and_load_videos(db: SessionDep):
 
     video_files = [
         f
-        for f in os.listdir(cfg.VIDEOS_DIR)
-        if os.path.isfile(os.path.join(cfg.VIDEOS_DIR, f))
+        for f in Path(cfg.VIDEOS_DIR).glob("*")
+        if f.is_file() and f.suffix in (".mp4", ".mkv")
     ]
 
     for filename in video_files:
