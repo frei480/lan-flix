@@ -3,10 +3,10 @@ import mimetypes
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Annotated, Any, Dict, Generator, List
+from typing import Annotated, Any
 
 import uvicorn
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -45,13 +45,13 @@ def health_check():
     return {"status": "ok"}
 
 
-@app.post("/videos/scan-and-load/", response_model=List[VideoInDB])
+@app.post("/videos/scan-and-load/", response_model=list[VideoInDB])
 async def scan_and_load_videos(db: SessionDep):
     """
     Сканирует папки с видео и транскрипциями и загружает их метаданные в БД.
     Обновляет существующие записи, если транскрипция изменилась.
     """
-    loaded_videos: List[VideoInDB] = []
+    loaded_videos: list[VideoInDB] = []
 
     video_files = [
         f
@@ -97,7 +97,7 @@ async def scan_and_load_videos(db: SessionDep):
     return loaded_videos
 
 
-@app.get("/videos/", response_model=List[VideoInDB])
+@app.get("/videos/", response_model=list[VideoInDB])
 async def read_videos(db: SessionDep, skip: int = 0, limit: int = 100):
     videos = await crud.get_videos(db, skip=skip, limit=limit)
     return [VideoInDB.model_validate(video) for video in videos]
@@ -112,7 +112,7 @@ async def read_video(video_id: int, db: SessionDep):
 
 
 @app.get("/videos/{video_id}/stream")
-async def stream_video(video_id: int, db: SessionDep):
+async def stream_video(video_id: int, request: Request, db: SessionDep):
     db_video = await crud.get_video(db, video_id=video_id)
     if db_video is None:
         raise HTTPException(status_code=404, detail="Video not found")
@@ -121,23 +121,82 @@ async def stream_video(video_id: int, db: SessionDep):
     if not video_path.is_file():
         raise HTTPException(status_code=404, detail="Video file not found on server")
 
+    # Получаем размер файла
+    file_size = os.stat(video_path).st_size
     mime_type, _ = mimetypes.guess_type(video_path)
     if not mime_type or not mime_type.startswith("video/"):
         mime_type = "application/octet-stream"  # Fallback
 
-    def iterfile() -> Generator[bytes, None, None]:
-        with open(video_path, mode="rb") as file_like:
-            yield from file_like
+    range_header = request.headers.get("Range")
 
-    return StreamingResponse(iterfile(), media_type=mime_type)
+    if range_header:
+        # Обрабатываем Range-запрос
+        try:
+            # Парсим заголовок Range, например "bytes=0-1023"
+            byte1, byte2 = 0, file_size - 1
+            range_parts = range_header.replace("bytes=", "").split("-")
+
+            byte1 = int(range_parts[0])
+            if len(range_parts) > 1 and range_parts[1]:
+                byte2 = int(range_parts[1])
+
+            # Убеждаемся, что диапазон корректен
+            if byte1 >= file_size or byte2 >= file_size or byte1 > byte2:
+                raise HTTPException(
+                    status_code=416, detail="Requested Range Not Satisfiable"
+                )
+
+        except ValueError:
+            raise HTTPException(status_code=416, detail="Invalid Range header")
+
+        start, end = byte1, byte2
+        length = end - start + 1
+
+        # Открываем файл и переходим к нужной позиции
+        def stream_in_chunks():
+            with open(video_path, mode="rb") as f:
+                f.seek(start)
+                bytes_read = 0
+                while bytes_read < length:
+                    # Читаем чанками, например по 64KB
+                    chunk_size = min(length - bytes_read, 65536)
+                    chunk = f.read(chunk_size)
+                    if not chunk:
+                        break  # Конец файла
+                    yield chunk
+                    bytes_read += len(chunk)
+
+        # Формируем ответ для частичного контента
+        response = StreamingResponse(
+            stream_in_chunks(),
+            media_type=mime_type,
+            status_code=206,  # 206 Partial Content
+        )
+        response.headers["Content-Range"] = f"bytes {start}-{end}/{file_size}"
+        response.headers["Content-Length"] = str(
+            length
+        )  # Длина только отправляемой части
+        response.headers["Accept-Ranges"] = "bytes"  # Всегда отправляем этот заголовок
+        return response
+
+    else:
+        # Если Range-заголовка нет, отправляем весь файл
+        def iterfile():
+            with open(video_path, mode="rb") as file_like:
+                yield from file_like
+
+        response = StreamingResponse(iterfile(), media_type=mime_type)
+        response.headers["Content-Length"] = str(file_size)  # Общая длина файла
+        response.headers["Accept-Ranges"] = "bytes"  # Всегда отправляем этот заголовок
+        return response
 
 
-@app.get("/search/", response_model=List[SearchResult])
+@app.get("/search/", response_model=list[SearchResult])
 async def search_videos(query: str, db: SessionDep):
     if not query:
         raise HTTPException(status_code=400, detail="Search query cannot be empty")
 
-    results: List[Dict[str, Any]] = await crud.search_videos_by_transcription(db, query)
+    results: list[dict[str, Any]] = await crud.search_videos_by_transcription(db, query)
     return [SearchResult(**result) for result in results]
 
 
