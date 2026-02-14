@@ -8,19 +8,24 @@
 </head>
 <body>
     <h1>Local Video Service</h1>
+    <div class="container">
+        <div class="video-section">
+            <button onclick="scanAndLoadVideos()">Scan and Load Videos</button>
+            <p>This will scan the 'videos' and 'transcriptions' folders and update the database.</p>
+            
+            <h2>Search Videos</h2>
+            <input type="text" id="search-input" placeholder="Enter search query">
+            <button onclick="searchVideos()">Search</button>
+            <video id="video-player" controls autoplay></video>
+        </div>
+        
+        <div class="video-list-section">
+            <div id="search-results"></div>
+            <h2>Available Videos</h2>
+            <div id="video-list"></div>
+        </div>
+    </div>
 
-    <button onclick="scanAndLoadVideos()">Scan and Load Videos</button>
-    <p>This will scan the 'videos' and 'transcriptions' folders and update the database.</p>
-
-    <h2>Search Videos</h2>
-    <input type="text" id="search-input" placeholder="Enter search query">
-    <button onclick="searchVideos()">Search</button>
-    <div id="search-results"></div>
-
-    <h2>Available Videos</h2>
-    <div id="video-list"></div>
-
-    <video id="video-player" controls autoplay></video>
 
     <script>
         // Изменяем базовый URL для запросов к бэкенду
