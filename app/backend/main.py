@@ -14,7 +14,15 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from app.backend import crud
 from app.backend.config import cfg
 from app.backend.database import get_session
-from app.backend.schemas import SearchResult, VideoCreate, VideoInDB, VideoUpdate, PlaylistCreate, PlaylistInDB, PlaylistWithVideos
+from app.backend.schemas import (
+    PlaylistCreate,
+    PlaylistInDB,
+    PlaylistWithVideos,
+    SearchResult,
+    VideoCreate,
+    VideoInDB,
+    VideoUpdate,
+)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -52,7 +60,7 @@ async def scan_and_load_videos(db: SessionDep):
     Обновляет существующие записи, если транскрипция изменилась.
     """
     loaded_videos: list[VideoInDB] = []
-    
+
     # Сначала создаем плейлисты из папок
     await create_playlists_from_folders(db)
 
@@ -83,12 +91,15 @@ async def scan_and_load_videos(db: SessionDep):
         playlist_id = db_playlist.id if db_playlist else None
 
         if db_video:
-            if db_video.transcription != transcription_content or db_video.playlist_id != playlist_id:
+            if (
+                db_video.transcription != transcription_content
+                or db_video.playlist_id != playlist_id
+            ):
                 video_update = VideoUpdate(
                     title=title,
                     filepath=filepath,
                     transcription=transcription_content,
-                    playlist_id=playlist_id
+                    playlist_id=playlist_id,
                 )
                 db_video = await crud.update_video(
                     db,
@@ -99,7 +110,10 @@ async def scan_and_load_videos(db: SessionDep):
                 loaded_videos.append(VideoInDB.model_validate(db_video))
         else:
             video_create = VideoCreate(
-                title=title, filepath=filepath, transcription=transcription_content, playlist_id=playlist_id
+                title=title,
+                filepath=filepath,
+                transcription=transcription_content,
+                playlist_id=playlist_id,
             )
             db_video = await crud.create_video(db, video_create)
             if db_video:
@@ -112,26 +126,26 @@ async def create_playlists_from_folders(db: SessionDep):
     """
     Создает плейлисты на основе папок с видео.
     """
-    video_folders = set()
+    video_folders: set[str] = set()
     video_files = [
         f
         for f in Path(cfg.VIDEOS_DIR).rglob("*")
         if f.is_file() and f.suffix in (".mp4", ".mkv", ".webm")
     ]
-    
+
     # Собираем все уникальные папки с видео
     for video_path in video_files:
         video_folders.add(str(video_path.parent))
-    
+
     # Создаем плейлисты для каждой папки
     for folder_path in video_folders:
         db_playlist = await crud.get_playlist_by_folder(db, folder_path=folder_path)
         if not db_playlist:
             playlist_name = Path(folder_path).name
             playlist_create = PlaylistCreate(
-                name=playlist_name, 
+                name=playlist_name,
                 folder_path=folder_path,
-                description=f"Плейлист для папки {playlist_name}"
+                description=f"Плейлист для папки {playlist_name}",
             )
             await crud.create_playlist(db, playlist_create)
 
@@ -250,6 +264,7 @@ async def clear_database(db: SessionDep):
 
 # Playlist endpoints
 
+
 @app.get("/playlists/", response_model=list[PlaylistInDB])
 async def read_playlists(db: SessionDep, skip: int = 0, limit: int = 100):
     playlists = await crud.get_playlists(db, skip=skip, limit=limit)
@@ -261,12 +276,12 @@ async def read_playlist(playlist_id: int, db: SessionDep):
     db_playlist = await crud.get_playlist(db, playlist_id=playlist_id)
     if db_playlist is None:
         raise HTTPException(status_code=404, detail="Playlist not found")
-    
+
     # Получаем видео для плейлиста
     videos = await crud.get_videos_by_playlist(db, playlist_id=playlist_id)
     playlist_with_videos = PlaylistWithVideos(
         **PlaylistInDB.model_validate(db_playlist).model_dump(),
-        videos=[VideoInDB.model_validate(video) for video in videos]
+        videos=[VideoInDB.model_validate(video) for video in videos],
     )
     return playlist_with_videos
 
