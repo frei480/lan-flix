@@ -38,8 +38,8 @@ services:
       username: ${username}
       password: ${password}
     volumes:
-      - "d:/Video/The Efficient Engineer:/app/videos" # Монтируем локальную папку videos в контейнер
-      - "d:/Video/The Efficient Engineer:/app/transcriptions" # Монтируем локальную папку transcriptions в контейнер
+      - "d:/Video:/app/videos" # Монтируем локальную папку videos в контейнер
+      - "d:/Video:/app/transcriptions" # Монтируем локальную папку transcriptions в контейнер
     depends_on:
       db:
         condition: service_healthy

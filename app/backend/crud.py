@@ -4,8 +4,8 @@ from sqlalchemy import text
 from sqlmodel import delete, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.backend.models import Video
-from app.backend.schemas import VideoCreate, VideoUpdate
+from app.backend.models import Video, Playlist
+from app.backend.schemas import VideoCreate, VideoUpdate, PlaylistCreate, PlaylistUpdate
 
 
 async def get_video(db: AsyncSession, video_id: int) -> Video | None:
@@ -22,6 +22,12 @@ async def get_video_by_filepath(db: AsyncSession, filepath: str) -> Video | None
 
 async def get_videos(db: AsyncSession, skip: int = 0, limit: int = 100) -> list[Video]:
     statement = select(Video).offset(skip).limit(limit)
+    result = await db.exec(statement)
+    return [v for v in result.all()]
+
+
+async def get_videos_by_playlist(db: AsyncSession, playlist_id: int) -> list[Video]:
+    statement = select(Video).where(Video.playlist_id == playlist_id)
     result = await db.exec(statement)
     return [v for v in result.all()]
 
@@ -91,3 +97,51 @@ async def clear_database(db: AsyncSession) -> None:
     stmt = delete(Video)
     await db.exec(stmt)
     await db.commit()
+
+
+# Playlist CRUD operations
+
+async def get_playlist(db: AsyncSession, playlist_id: int) -> Playlist | None:
+    statement = select(Playlist).where(Playlist.id == playlist_id)
+    result = await db.exec(statement)
+    return result.first()
+
+
+async def get_playlist_by_folder(db: AsyncSession, folder_path: str) -> Playlist | None:
+    statement = select(Playlist).where(Playlist.folder_path == folder_path)
+    result = await db.exec(statement)
+    return result.first()
+
+
+async def get_playlists(db: AsyncSession, skip: int = 0, limit: int = 100) -> list[Playlist]:
+    statement = select(Playlist).offset(skip).limit(limit)
+    result = await db.exec(statement)
+    return [p for p in result.all()]
+
+
+async def create_playlist(db: AsyncSession, playlist: PlaylistCreate) -> Playlist:
+    db_playlist = Playlist(**playlist.model_dump())
+    db.add(db_playlist)
+    await db.commit()
+    await db.refresh(db_playlist)
+    return db_playlist
+
+
+async def update_playlist(
+    db: AsyncSession, playlist_id: int, playlist: PlaylistUpdate
+) -> Playlist | None:
+    db_playlist = await get_playlist(db, playlist_id)
+    if db_playlist:
+        for key, value in playlist.model_dump(exclude_unset=True).items():
+            setattr(db_playlist, key, value)
+        await db.commit()
+        await db.refresh(db_playlist)
+    return db_playlist
+
+
+async def delete_playlist(db: AsyncSession, playlist_id: int) -> Playlist | None:
+    db_playlist = await get_playlist(db, playlist_id)
+    if db_playlist:
+        await db.delete(db_playlist)
+        await db.commit()
+    return db_playlist

@@ -19,6 +19,11 @@
             <video id="video-player" controls autoplay></video>
         </div>
         
+        <div class="playlists-section">
+            <h2>Playlists</h2>
+            <div id="playlist-list"></div>
+        </div>
+        
         <div class="video-list-section">
             <div id="search-results"></div>
             <h2>Available Videos</h2>
@@ -31,7 +36,10 @@
         // Изменяем базовый URL для запросов к бэкенду
         const BACKEND_URL = '/api'; // Используем прокси через nginx
 
-        document.addEventListener('DOMContentLoaded', fetchVideos);
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchVideos();
+            fetchPlaylists();
+        });
 
         async function scanAndLoadVideos() {
             try {
@@ -39,6 +47,7 @@
                 const data = await response.json();
                 alert(`Loaded/Updated ${data.length} videos.`);
                 fetchVideos(); // Refresh the video list
+                fetchPlaylists(); // Refresh the playlist list
             } catch (error) {
                 console.error('Error scanning and loading videos:', error);
                 alert('Error scanning and loading videos. Check console for details.');
@@ -67,11 +76,55 @@
             }
         }
 
+        async function fetchPlaylists() {
+            try {
+                const response = await fetch(`${BACKEND_URL}/playlists/`);
+                const playlists = await response.json();
+                const playlistListDiv = document.getElementById('playlist-list');
+                playlistListDiv.innerHTML = '';
+                if (playlists.length === 0) {
+                    playlistListDiv.innerHTML = '<p>No playlists found.</p>';
+                } else {
+                    playlists.forEach(playlist => {
+                        const playlistItem = document.createElement('div');
+                        playlistItem.className = 'playlist-item';
+                        playlistItem.textContent = playlist.name;
+                        playlistItem.onclick = () => showPlaylistVideos(playlist.id);
+                        playlistListDiv.appendChild(playlistItem);
+                    });
+                }
+            } catch (error) {
+                console.error('Error fetching playlists:', error);
+            }
+        }
+
         function playVideo(videoId) {
             const videoPlayer = document.getElementById('video-player');
             videoPlayer.src = `${BACKEND_URL}/videos/${videoId}/stream`;
             videoPlayer.load();
             videoPlayer.play();
+        }
+
+        async function showPlaylistVideos(playlistId) {
+            try {
+                const response = await fetch(`${BACKEND_URL}/playlists/${playlistId}`);
+                const playlist = await response.json();
+                const videoListDiv = document.getElementById('video-list');
+                videoListDiv.innerHTML = '';
+                if (playlist.videos.length === 0) {
+                    videoListDiv.innerHTML = '<p>No videos in this playlist.</p>';
+                } else {
+                    playlist.videos.forEach(video => {
+                        const videoItem = document.createElement('div');
+                        videoItem.className = 'video-item';
+                        videoItem.textContent = video.title;
+                        videoItem.onclick = () => playVideo(video.id);
+                        videoListDiv.appendChild(videoItem);
+                    });
+                }
+            } catch (error) {
+                console.error('Error fetching playlist videos:', error);
+            }
         }
 
         async function searchVideos() {
@@ -106,9 +159,25 @@
     </script>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { 
+            display: flex; 
+            flex-direction: row; 
+            gap: 20px; 
+        }
+        .video-section {
+            flex: 60%;
+        }
+        .playlists-section {
+            flex: 20%;
+        }
+        .video-list-section {
+            flex: 20%;
+        }
         #video-list { margin-top: 20px; }
         .video-item { margin-bottom: 10px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; cursor: pointer; }
         .video-item:hover { background-color: #f0f0f0; }
+        .playlist-item { margin-bottom: 10px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; cursor: pointer; }
+        .playlist-item:hover { background-color: #f0f0f0; }
         video { max-width: 100%; height: auto; display: block; margin-top: 20px; }
         #search-results { margin-top: 20px; }
         .search-result-item { margin-bottom: 10px; padding: 10px; border: 1px solid #eee; border-radius: 5px; }

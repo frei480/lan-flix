@@ -6,6 +6,7 @@ class VideoBase(BaseModel):
     filepath: str
     duration_seconds: Optional[int] = None
     transcription: Optional[str] = None
+    playlist_id: Optional[int] = None
 
 class VideoCreate(VideoBase):
     pass
@@ -24,3 +25,23 @@ class SearchResult(BaseModel):
     title: str
     filepath: str
     snippet: Optional[str] = None  # Кусочек текста с совпадением
+
+class PlaylistBase(BaseModel):
+    name: str
+    folder_path: str
+    description: Optional[str] = None
+
+class PlaylistCreate(PlaylistBase):
+    pass
+
+class PlaylistUpdate(PlaylistBase):
+    pass
+
+class PlaylistInDB(PlaylistBase):
+    id: int
+
+    class Config:
+        from_attributes = True
+
+class PlaylistWithVideos(PlaylistInDB):
+    videos: list[VideoInDB] = []

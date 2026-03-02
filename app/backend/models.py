@@ -1,6 +1,7 @@
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 from sqlmodel import Field, SQLModel
+from typing import Optional
 
 
 class Video(SQLModel, table=True):
@@ -15,5 +16,15 @@ class Video(SQLModel, table=True):
         default=None,
         sa_column=sa.Column(postgresql.TSVECTOR(), nullable=True),
     )
+    playlist_id: int | None = Field(default=None, foreign_key="playlists.id")
 
     __pydantic_exclude__ = {"search_vector"}
+
+
+class Playlist(SQLModel, table=True):
+    __tablename__ = "playlists"
+
+    id: int | None = Field(default=None, primary_key=True, index=True)
+    name: str = Field(index=True)
+    folder_path: str = Field(unique=True, index=True)
+    description: Optional[str] = None
