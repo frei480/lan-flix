@@ -55,19 +55,21 @@ async def scan_and_load_videos(db: SessionDep):
 
     video_files = [
         f
-        for f in Path(cfg.VIDEOS_DIR).glob("*")
-        if f.is_file() and f.suffix in (".mp4", ".mkv")
+        for f in Path(cfg.VIDEOS_DIR).rglob("*")
+        if f.is_file() and f.suffix in (".mp4", ".mkv", ".webm")
     ]
 
-    for filename in video_files:
-        filepath = os.path.join(cfg.VIDEOS_DIR, filename)
+    for video_path in video_files:
+        # Используем полный путь к видео как filepath в БД
+        filepath = str(video_path)
 
-        title = Path(filename).stem
+        # Для транскрипции ищем файл с тем же именем в той же папке
+        transcription_path = video_path.with_suffix(".md")
+        title = transcription_path.stem
 
-        transcription_filepath = os.path.join(cfg.TRANSCRIPTIONS_DIR, f"{title}.md")
         transcription_content = None
-        if os.path.exists(transcription_filepath):
-            with open(transcription_filepath, "r", encoding="utf-8") as f:
+        if transcription_path.is_file():
+            with open(transcription_path, "r", encoding="utf-8") as f:
                 transcription_content = f.read()
 
         db_video = await crud.get_video_by_filepath(db, filepath=filepath)
