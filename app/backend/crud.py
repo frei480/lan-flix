@@ -4,8 +4,8 @@ from sqlalchemy import text
 from sqlmodel import delete, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.backend.models import Video, Playlist
-from app.backend.schemas import VideoCreate, VideoUpdate, PlaylistCreate, PlaylistUpdate
+from app.backend.models import Playlist, Video
+from app.backend.schemas import PlaylistCreate, PlaylistUpdate, VideoCreate, VideoUpdate
 
 
 async def get_video(db: AsyncSession, video_id: int) -> Video | None:
@@ -101,6 +101,7 @@ async def clear_database(db: AsyncSession) -> None:
 
 # Playlist CRUD operations
 
+
 async def get_playlist(db: AsyncSession, playlist_id: int) -> Playlist | None:
     statement = select(Playlist).where(Playlist.id == playlist_id)
     result = await db.exec(statement)
@@ -113,7 +114,9 @@ async def get_playlist_by_folder(db: AsyncSession, folder_path: str) -> Playlist
     return result.first()
 
 
-async def get_playlists(db: AsyncSession, skip: int = 0, limit: int = 100) -> list[Playlist]:
+async def get_playlists(
+    db: AsyncSession, skip: int = 0, limit: int = 100
+) -> list[Playlist]:
     statement = select(Playlist).offset(skip).limit(limit)
     result = await db.exec(statement)
     return [p for p in result.all()]
