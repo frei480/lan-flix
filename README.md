@@ -1,116 +1,97 @@
-# LanFlix - Локальный видеосервис с поиском по транскрипциям
+# LanFlix
 
-LanFlix - это локальный видеосервис, который позволяет просматривать видео с вашего компьютера и искать по их транскрипциям. Сервис состоит из бэкенда на FastAPI и фронтенда на HTML/JS, упакованных в Docker контейнеры.
+LanFlix — локальный видеосервис для просмотра видео с компьютера и поиска по их транскрипциям.
 
-## Возможности
+Коротко:
+- Бэкенд на FastAPI; фронтенд — простой HTML/CSS/JS.
+- Хранение метаданных и транскрипций в PostgreSQL (через SQLModel).
+- Поддержка Docker и Docker Compose для быстрого развёртывания.
 
-- Просмотр видео с локального компьютера через веб-интерфейс
-- Поиск по транскрипциям видео (Full Text Search)
-- Автоматическая загрузка метаданных видео и транскрипций в базу данных
-- Docker-контейнеризация для легкого развертывания
+## Быстрый старт (Docker)
 
-## Структура проекта
+1. Установите Docker и Docker Compose.
+2. Скопируйте репозиторий и перейдите в папку проекта:
 
-```
-.
-├── app/
-│   ├── backend/          # Бэкенд на FastAPI
-│   │   ├── main.py       # Основной файл приложения
-│   │   ├── models.py     # Модели данных
-│   │   ├── schemas.py    # Pydantic схемы
-│   │   ├── crud.py       # Функции для работы с БД
-│   │   ├── database.py  # Конфигурация БД
-│   │   └── config.py     # Конфигурация приложения
-│   └── frontend/        # Фронтенд на HTML/JS
-│       ├── index.html
-│       └── style.css
-├── videos/              # Папка с видео файлами (внешний volume)
-├── transcriptions/       # Папка с транскрипциями (внешний volume)
-├── alembic/              # Миграции БД
-├── docker-compose.yml   # Docker Compose конфигурация
-├── Dockerfile.backend    # Dockerfile для бэкенда
-├── Dockerfile.frontend   # Dockerfile для фронтенда
-├── nginx.conf            # Конфигурация Nginx
-├── pyproject.toml        # Зависимости проекта
-└── README.md
+```bash
+git clone <repo-url>
+cd lan-flix
 ```
 
-## Технологии
+3. Создайте `.env` в корне проекта (пример значений):
 
-- **Бэкенд**: Python, FastAPI, SQLModel, PostgreSQL, Alembic
-- **Фронтенд**: HTML, JavaScript, CSS
-- **Инфраструктура**: Docker, Docker Compose, Nginx
+```env
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=your_password
+POSTGRES_DB=lanflix
+ADMIN_USER=admin
+ADMIN_PASS=admin
+```
 
-## Установка и запуск
+4. В `docker-compose.yml` укажите монтирование папок с вашими видео и транскрипциями (volumes):
 
-1. Убедитесь, что у вас установлен Docker и Docker Compose.
+```yaml
+volumes:
+  - /путь/к/video:/app/videos
+  - /путь/к/transcriptions:/app/transcriptions
+```
 
-2. Клонируйте репозиторий:
-   ```bash
-   git clone <repo-url>
-   cd lan-flix
-   ```
+5. Запустите стек:
 
-3. Создайте файл `.env` в корне проекта с необходимыми переменными окружения:
-   ```env
-   DB_USER=postgres
-   DB_PASS=your_password
-   DB_NAME=lanflix
-   username=admin
-   password=admin
-   ```
+```bash
+docker-compose up -d --build
+```
 
-4. Отредактируйте `docker-compose.yml`, чтобы указать правильные пути к вашим видео и транскрипциям:
-   ```yaml
-   volumes:
-     - "/path/to/your/videos:/app/videos"
-     - "/path/to/your/transcriptions:/app/transcriptions"
-   ```
+6. Откройте http://localhost в браузере.
 
-5. Запустите приложение:
-   ```bash
-   docker-compose up -d
-   ```
+## Разработка локально
 
-6. Откройте в браузере `http://localhost`
-
-## Использование
-
-1. После первого запуска нажмите кнопку "Scan and Load Videos" на главной странице, чтобы загрузить видео и транскрипции в базу данных.
-
-2. Используйте поле поиска для поиска по транскрипциям видео.
-
-3. Нажмите на название видео в списке, чтобы начать его просмотр.
-
-## API Endpoints
-
-- `GET /api/health` - Проверка состояния сервиса
-- `POST /api/videos/scan-and-load/` - Сканирование и загрузка видео
-- `GET /api/videos/` - Получение списка видео
-- `GET /api/videos/{id}` - Получение информации о видео
-- `GET /api/videos/{id}/stream` - Потоковая передача видео
-- `GET /api/search/?query={query}` - Поиск по транскрипциям
-
-## Разработка
-
-Для разработки рекомендуется использовать виртуальное окружение Python:
+1. Рекомендуется виртуальное окружение:
 
 ```bash
 python -m venv venv
-source venv/bin/activate  # На Windows: venv\Scripts\activate
-pip install -e .
+venv\\Scripts\\activate    # Windows
+pip install -r requirements.txt
 ```
 
-Для запуска миграций базы данных:
+2. Примените миграции (alembic):
+
 ```bash
 alembic upgrade head
 ```
 
-Для запуска бэкенда в режиме разработки:
+3. Запустите бэкенд для разработки:
+
 ```bash
-python -m app.backend.main
+uvicorn app.backend.main:app --reload
 ```
+
+## Основные команды и эндпойнты
+
+- Проверка здоровья: `GET /api/health`
+- Сканирование и загрузка видео: `POST /api/videos/scan-and-load/`
+- Список видео: `GET /api/videos/`
+- Детали видео: `GET /api/videos/{id}`
+- Поток видео: `GET /api/videos/{id}/stream`
+- Поиск по транскрипциям: `GET /api/search/?query=...`
+
+## Структура репозитория (основное)
+
+```
+app/backend/      # FastAPI-приложение (main.py, models.py, crud.py, schemas.py, database.py)
+app/frontend/     # Простой фронтенд (index.html, style.css)
+alembic/          # Миграции базы данных
+videos/           # Рекомендуется монтировать как volume
+transcriptions/   # Рекомендуется монтировать как volume
+docker-compose.yml
+Dockerfile.backend
+Dockerfile.frontend
+```
+
+## Полезные заметки
+
+- Перед публикацией проверьте, что в `.env` нет секретов в репозитории.
+- Для продуктивного окружения настройте обратный прокси (nginx.conf) и SSL.
 
 ## Лицензия
 
-MIT
+Проект распространяется под лицензией MIT.
