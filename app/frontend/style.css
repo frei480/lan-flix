@@ -44,8 +44,7 @@
 
         .hero {
             height: 50vh;
-            /* background: linear-gradient(to top, #141414 0%, #141414 30%, transparent 100%), 
-                        url('https://images.unsplash.com/photo-1574375927938-d5a98e8efe85?w=1920') center/cover; */
+            background: linear-gradient(to top, #141414 0%, #141414 30%, transparent 100%); 
             display: flex;
             align-items: center;
             justify-content: center;
