@@ -1,8 +1,10 @@
- const BACKEND_URL = '/api';
-        let allVideos = [];
-        let allPlaylists = [];
-        let currentView = 'all';
-
+const BACKEND_URL = '/api';
+let allVideos = [];
+let allPlaylists = [];
+let currentView = 'all';
+let hoverDelay;
+let previewTimeout = null;
+let currentPreviewVideo = null;
         document.addEventListener('DOMContentLoaded', function() {
             fetchVideos();
             fetchPlaylists();
@@ -135,7 +137,9 @@
 
                 playlist.videos.forEach(video => {
                     html += `
-                        <div class="video-card" onclick="playVideo(${video.id})">
+                        <div class="video-card" onclick="playVideo(${video.id})"
+                        onmouseenter="startPreview(${video.id}, this)"
+                            onmouseleave="stopPreview()">
                             <div style="width: 100%; height: 100%; background: linear-gradient(45deg, #333, #444); display: flex; align-items: center; justify-content: center;">
                                 <span style="font-size: 48px;">🎬</span>
                             </div>
@@ -181,7 +185,9 @@
 
             videos.forEach(video => {
                 html += `
-                    <div class="video-card" onclick="playVideo(${video.id})">
+                    <div class="video-card" onclick="playVideo(${video.id})"
+                        onmouseenter="startPreview(${video.id}, this)"
+                        onmouseleave="stopPreview()">
                         <div style="width: 100%; height: 100%; background: linear-gradient(45deg, #333, #444); display: flex; align-items: center; justify-content: center;">
                             <span style="font-size: 48px;">🎬</span>
                         </div>
@@ -295,7 +301,8 @@
                         html += `
                             <div class="search-result-card" 
                                 onclick="playVideo(${result.id}, ${timestamp || 0})">
-                                <div class="search-result-thumbnail">
+                                <div class="video-card" onmouseenter="startPreview(${result.id}, this, ${timestamp || 0})"
+                                onmouseleave="stopPreview()">
                                     <span style="font-size: 24px;">🎬</span>
                                 </div>
                                 <div class="search-result-info">
@@ -383,3 +390,54 @@
 
             return minutes * 60 + seconds;
         }
+        
+        
+
+function startPreview(videoId, element) {
+    hoverDelay = setTimeout(() => {
+        actuallyStartPreview(videoId, element);
+    }, 300); // старт через 300мс
+}
+
+function actuallyStartPreview(videoId, element, currentTime=5) {
+    stopPreview();
+
+    const video = document.createElement('video');
+    video.src = `${BACKEND_URL}/videos/${videoId}/stream`;
+    video.muted = true;
+    video.autoplay = true;
+    video.playsInline = true;
+    video.style.position = 'absolute';
+    video.style.top = '0';
+    video.style.left = '0';
+    video.style.width = '100%';
+    video.style.height = '100%';
+    video.style.objectFit = 'cover';
+    video.style.zIndex = '5';
+
+    element.appendChild(video);
+    currentPreviewVideo = video;
+
+    video.addEventListener('loadedmetadata', () => {
+        video.currentTime = currentTime;
+        video.play();
+    });
+
+    previewTimeout = setTimeout(stopPreview, 5000);
+}
+
+function stopPreview() {
+    clearTimeout(hoverDelay);
+
+    if (previewTimeout) {
+        clearTimeout(previewTimeout);
+        previewTimeout = null;
+    }
+
+    if (currentPreviewVideo) {
+        currentPreviewVideo.pause();
+        currentPreviewVideo.remove();
+        currentPreviewVideo = null;
+    }
+}
+        
