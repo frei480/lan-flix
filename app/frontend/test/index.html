@@ -262,6 +262,45 @@
             background-color: #141414;
             max-height: 50vh;
             overflow-y: auto;
+            transform: translateY(calc(100% - 40px));
+            transition: transform 0.3s ease;
+        }
+
+        .content-section:hover,
+        .content-section.active {
+            transform: translateY(0);
+        }
+
+        .content-section::before {
+            content: '';
+            display: block;
+            height: 30px;
+            position: absolute;
+            top: -30px;
+            left: 0;
+            right: 0;
+            cursor: pointer;
+        }
+
+        .content-section-handle {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 25px;
+            cursor: pointer;
+            color: #666;
+            font-size: 12px;
+        }
+
+        .content-section-handle::after {
+            content: '▲';
+            font-size: 10px;
+            margin-left: 5px;
+        }
+
+        .content-section:hover .content-section-handle::after,
+        .content-section.active .content-section-handle::after {
+            content: '▼';
         }
 
         .content-section h2 {
@@ -306,7 +345,7 @@
 
         .video-card {
             min-width: 140px;
-            height: 180px;
+            height: 90px;
             background-color: #333;
             border-radius: 4px;
             cursor: pointer;
@@ -567,12 +606,7 @@
     <nav class="navbar">
         <div class="logo">LAN-FLIX</div>
         <div style="display: flex; align-items: center; gap: 20px;">
-            <a href="/" class="home-link">Home</a>
-            <button class="scan-btn" onclick="showScanModal()">+ Add Videos</button>
-            <div class="search-bar">
-                <input type="text" id="search-input" placeholder="Search videos...">
-                <button onclick="searchVideos()" style="background: none; border: none; color: #fff; cursor: pointer;">🔍</button>
-            </div>
+            <a href="/" class="home-link">Home</a>            
         </div>
     </nav>
 
@@ -607,6 +641,10 @@
         <button class="back-btn" id="back-btn" style="display: none;" onclick="goBack()">
             ← Back to Browse
         </button>
+
+        <div class="content-section-handle" onclick="toggleContentSection()">
+            <span>Videos & Playlists</span>
+        </div>
 
         <div id="video-container">
             <div class="loader"></div>
@@ -704,6 +742,7 @@
 
         function showPlaylists() {
             currentView = 'playlists';
+            document.querySelector('.content-section').classList.add('active');
             const tabs = document.querySelectorAll('.category-tab');
             tabs.forEach(tab => tab.classList.remove('active'));
             tabs.forEach(tab => {
@@ -717,7 +756,6 @@
             
             if (allPlaylists.length === 0) {
                 container.innerHTML = `
-                    <h2>My Lists</h2>
                     <div class="video-row">
                         <p class="no-videos">No playlists found. Create playlists on the main page.</p>
                     </div>
@@ -726,7 +764,6 @@
             }
 
             let html = `
-                <h2>My Lists</h2>
                 <div class="video-row">
             `;
 
@@ -789,6 +826,10 @@
             }
         }
 
+        function toggleContentSection() {
+            document.querySelector('.content-section').classList.toggle('active');
+        }
+
         function goBack() {
             currentView = 'playlists';
             document.getElementById('back-btn').style.display = 'none';
@@ -814,7 +855,6 @@
             
             if (videos.length === 0) {
                 container.innerHTML = `
-                    <h2>Popular on LAN-FLIX</h2>
                     <div class="video-row">
                         <p class="no-videos">No videos found. Click "+ Add Videos" to scan and load videos.</p>
                     </div>
@@ -823,7 +863,6 @@
             }
 
             let html = `
-                <h2>Popular on LAN-FLIX</h2>
                 <div class="video-row">
             `;
 
@@ -857,6 +896,31 @@
             player.src = `${BACKEND_URL}/videos/${videoId}/stream`;
             modal.classList.add('active');
             player.play();
+        }
+
+        function playVideo(videoId, startTime = 0) {
+            const modal = document.getElementById('video-modal');
+            const player = document.getElementById('video-player');
+            const title = document.getElementById('modal-title');
+            
+            const video = allVideos.find(v => v.id === videoId);
+            if (video) {
+                title.textContent = video.title;
+            }
+
+            player.src = `${BACKEND_URL}/videos/${videoId}/stream`;
+
+            player.addEventListener('loadedmetadata', function onLoad() {
+                player.removeEventListener('loadedmetadata', onLoad);
+
+                if (startTime && !isNaN(startTime)) {
+                    player.currentTime = startTime;
+                }
+
+                player.play();
+            });
+
+            modal.classList.add('active');
         }
 
         function closeModal() {
@@ -966,10 +1030,27 @@
                     }
 
                     let html = '';
+                    // results.forEach(result => {
+                    //     const snippet = result.snippet || 'No description available';
+                    //     html += `
+                    //         <div class="search-result-card" onclick="playVideo(${result.id})">
+                    //             <div class="search-result-thumbnail">
+                    //                 <span style="font-size: 24px;">🎬</span>
+                    //             </div>
+                    //             <div class="search-result-info">
+                    //                 <div class="search-result-card-title">${result.title}</div>
+                    //                 <div class="search-result-card-snippet">${snippet}</div>
+                    //             </div>
+                    //         </div>
+                    //     `;
+                    // });
                     results.forEach(result => {
-                        const snippet = result.snippet || 'No description available';
+                        const snippet = result.snippet || '';
+                        const timestamp = extractTimestamp(snippet);
+
                         html += `
-                            <div class="search-result-card" onclick="playVideo(${result.id})">
+                            <div class="search-result-card" 
+                                onclick="playVideo(${result.id}, ${timestamp || 0})">
                                 <div class="search-result-thumbnail">
                                     <span style="font-size: 24px;">🎬</span>
                                 </div>
@@ -999,6 +1080,10 @@
         }
 
         function filterCategory(category, element) {
+            const section = document.querySelector('.content-section');
+            if (!section.classList.contains('active')) {
+                section.classList.add('active');
+            }
             currentView = category;
             document.getElementById('back-btn').style.display = 'none';
             updateTabs(category, element);
@@ -1042,6 +1127,20 @@
                 closeScanModal();
             }
         });
+
+        function extractTimestamp(text) {
+            if (!text) return null;
+
+            // Ищем первое вхождение формата 00:00
+            const match = text.match(/\b(\d{2}):(\d{2})\b/);
+
+            if (!match) return null;
+
+            const minutes = parseInt(match[1], 10);
+            const seconds = parseInt(match[2], 10);
+
+            return minutes * 60 + seconds;
+        }
     </script>
 </body>
 </html>
