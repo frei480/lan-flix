@@ -268,7 +268,7 @@ async def clear_database(db: SessionDep):
 @app.get("/playlists/", response_model=list[PlaylistInDB])
 async def read_playlists(db: SessionDep, skip: int = 0, limit: int = 100):
     playlists = await crud.get_playlists(db, skip=skip, limit=limit)
-    return [PlaylistInDB.model_validate(playlist) for playlist in playlists]
+    return [PlaylistInDB(**playlist) for playlist in playlists]
 
 
 @app.get("/playlists/{playlist_id}", response_model=PlaylistWithVideos)

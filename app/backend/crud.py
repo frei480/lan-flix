@@ -116,10 +116,28 @@ async def get_playlist_by_folder(db: AsyncSession, folder_path: str) -> Playlist
 
 async def get_playlists(
     db: AsyncSession, skip: int = 0, limit: int = 100
-) -> list[Playlist]:
+) -> list[dict]:
     statement = select(Playlist).offset(skip).limit(limit)
     result = await db.exec(statement)
-    return [p for p in result.all()]
+    playlists = result.all()
+    
+    playlist_data = []
+    for playlist in playlists:
+        folder_path = playlist.folder_path
+        videos_stmt = select(Video).where(Video.filepath.startswith(folder_path))
+        videos_result = await db.exec(videos_stmt)
+        videos = videos_result.all()
+        
+        playlist_dict = {
+            "id": playlist.id,
+            "name": playlist.name,
+            "folder_path": playlist.folder_path,
+            "description": playlist.description,
+            "video_count": len(videos),
+        }
+        playlist_data.append(playlist_dict)
+    
+    return playlist_data
 
 
 async def create_playlist(db: AsyncSession, playlist: PlaylistCreate) -> Playlist:

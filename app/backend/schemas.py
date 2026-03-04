@@ -39,6 +39,7 @@ class PlaylistUpdate(PlaylistBase):
 
 class PlaylistInDB(PlaylistBase):
     id: int
+    video_count: int = 0
 
     class Config:
         from_attributes = True
