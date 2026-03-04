@@ -1,4 +1,12 @@
-* {
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LAN-FLIX</title>
+    <link rel="stylesheet" href="/style.css">
+    <style>
+        * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
@@ -592,4 +600,78 @@
             background-color: #666;
             color: #fff;
         }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">LAN-FLIX</div>
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <a href="/" class="home-link">Home</a>
+            <button class="scan-btn" onclick="showScanModal()">+ Add Videos</button>
+        </div>
+    </nav>
+
+    <div class="hero">
+        <div class="hero-content">
+            <h1>Watch Videos Locally</h1>
+            <p>Stream your personal video collection</p>
+            <div class="hero-search-container">
+                <div class="hero-search">
+                    <input type="text" id="hero-search-input" placeholder="Search for movies, shows and more...">
+                    <button onclick="heroSearch()">🔍</button>
+                </div>
+                <div class="hero-results" id="hero-results"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="search-results-section" id="search-results-section">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
+            <h2 id="search-results-title">Search Results</h2>
+            <button class="close-search" onclick="clearSearch()">✕</button>
+        </div>
+        <div id="search-results-list"></div>
+    </div>
+
+    <div class="content-section">
+        <div class="category-tabs">
+            <button class="category-tab active" onclick="filterCategory('all', this)">All Videos</button>           
+            <button class="category-tab" onclick="showPlaylists()">My Lists</button>
+        </div>
+
+        <button class="back-btn" id="back-btn" style="display: none;" onclick="goBack()">
+            ← Back to Browse
+        </button>
+
+        <div class="content-section-handle" onclick="toggleContentSection()">
+            <span>Videos & Playlists</span>
+        </div>
+
+        <div id="video-container">
+            <div class="loader"></div>
+        </div>
+    </div>
+
+    <div class="video-player-modal" id="video-modal">
+        <span class="close-modal" onclick="closeModal()">&times;</span>
+        <div class="modal-content">
+            <video id="video-player" controls>
+                Your browser does not support the video tag.
+            </video>
+            <h2 id="modal-title" style="margin-top: 20px;"></h2>
+        </div>
+    </div>
+
+    <div class="scan-modal" id="scan-modal">
+        <div class="scan-modal-content">
+            <h3>Scan and Load Videos</h3>
+            <p style="margin-bottom: 20px; color: #aaa;">This will scan the 'videos' and 'transcriptions' folders and update the database.</p>
+            <button class="confirm-btn" onclick="scanAndLoadVideos()">Scan Now</button>
+            <button class="cancel-btn" onclick="closeScanModal()">Cancel</button>
+        </div>
+    </div>
+
+    <script src="/common.js"></script>
     
+</body>
+</html>
