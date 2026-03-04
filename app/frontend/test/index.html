@@ -961,20 +961,6 @@
                     }
 
                     let html = '';
-                    // results.forEach(result => {
-                    //     const snippet = result.snippet || 'No description available';
-                    //     html += `
-                    //         <div class="search-result-card" onclick="playVideo(${result.id})">
-                    //             <div class="search-result-thumbnail">
-                    //                 <span style="font-size: 24px;">🎬</span>
-                    //             </div>
-                    //             <div class="search-result-info">
-                    //                 <div class="search-result-card-title">${result.title}</div>
-                    //                 <div class="search-result-card-snippet">${snippet}</div>
-                    //             </div>
-                    //         </div>
-                    //     `;
-                    // });
                     results.forEach(result => {
                         const snippet = result.snippet || '';
                         const timestamp = extractTimestamp(snippet);
