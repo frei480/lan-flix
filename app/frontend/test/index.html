@@ -836,20 +836,6 @@
             showPlaylists();
         }
 
-        function updateTabs(activeTab) {
-            const tabs = document.querySelectorAll('.category-tab');
-            tabs.forEach(tab => {
-                tab.classList.remove('active');
-                const text = tab.textContent.toLowerCase();
-                if ((activeTab === 'all' && text.includes('all videos')) ||
-                    (activeTab === 'movies' && text.includes('movies')) ||
-                    (activeTab === 'series' && text.includes('series')) ||
-                    (activeTab === 'playlists' && text.includes('my lists'))) {
-                    tab.classList.add('active');
-                }
-            });
-        }
-
         function displayVideos(videos) {
             const container = document.getElementById('video-container');
             
@@ -1107,8 +1093,6 @@
                 tabs.forEach(tab => {
                     const text = tab.textContent.toLowerCase();
                     if ((activeTab === 'all' && text.includes('all videos')) ||
-                        (activeTab === 'movies' && text.includes('movies')) ||
-                        (activeTab === 'series' && text.includes('series')) ||
                         (activeTab === 'playlists' && text.includes('my lists'))) {
                         tab.classList.add('active');
                     }
