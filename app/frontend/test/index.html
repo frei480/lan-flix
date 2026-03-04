@@ -959,7 +959,7 @@
                             <div class="search-result-card" 
                                 onclick="playVideo(${result.id}, ${timestamp || 0})"
                                 >
-                                <div class="video-card" onmouseenter="startPreview(${result.id}, this)"
+                                <div class="video-card" onmouseenter="startPreview(${result.id}, this, ${timestamp || 0})"
                                 onmouseleave="stopPreview()">
                                     <span style="font-size: 24px;">🎬</span>
                                 </div>
@@ -1051,7 +1051,7 @@
         let previewTimeout = null;
         let currentPreviewVideo = null;
 
-        function startPreview(videoId, element) {
+        function startPreview(videoId, element, currentTime=5) {
             // Если уже есть превью — убираем
             stopPreview();
 
@@ -1072,7 +1072,7 @@
             currentPreviewVideo = video;
 
             video.addEventListener('loadedmetadata', () => {
-                video.currentTime = 5; // Проигрываем c 5ой секунды
+                video.currentTime = currentTime; // Проигрываем c 5ой секунды или с найденной позиции
                 video.play();
             });
 
