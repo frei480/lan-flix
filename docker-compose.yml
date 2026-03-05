@@ -9,9 +9,9 @@ services:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASS}
     ports:
-      - "5432:5432" # Опционально, если нужно обращаться к БД напрямую с хоста
+      - "5555:5432" # Опционально, если нужно обращаться к БД напрямую с хоста
     volumes:
-      - pg_data:/var/lib/postgresql
+      - ${pg_data_dir}:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 5s
@@ -38,8 +38,8 @@ services:
       username: ${username}
       password: ${password}
     volumes:
-      - "d:/Video:/app/videos" # Монтируем локальную папку videos в контейнер
-      - "d:/Video:/app/transcriptions" # Монтируем локальную папку transcriptions в контейнер
+      - ${video_dir}:/app/videos # Монтируем локальную папку videos в контейнер
+      - ${video_dir}:/app/transcriptions # Монтируем локальную папку transcriptions в контейнер
     depends_on:
       db:
         condition: service_healthy
@@ -61,5 +61,3 @@ networks:
   lanflix:
     driver: bridge
 
-volumes:
-  pg_data:
