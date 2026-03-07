@@ -311,6 +311,7 @@ html {
     overflow-x: auto;
     overflow-y: hidden;
     padding-bottom: 10px;
+    justify-content: center;
 }
 
 .video-row::-webkit-scrollbar {
@@ -340,15 +341,26 @@ html {
     opacity: 1;
 }
 
-.video-card {
-    min-width: 140px;
+.video-card, .playlist-card {
+    min-width: 150px;
     height: 90px;
-    background-color: #333;
     border-radius: 4px;
     cursor: pointer;
     transition: transform 0.3s;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;    
+}
+
+.video-card {
+    background-color: #333;
     position: relative;
     overflow: hidden;
+}
+
+.playlist-card {
+    background: linear-gradient(135deg, #e50914 0%, #b20710 100%);
 }
 
 .video-card:hover {
@@ -502,19 +514,6 @@ html {
     text-decoration: underline;
 }
 
-.playlist-card {
-    min-width: 150px;
-    height: 90px;
-    background: linear-gradient(135deg, #e50914 0%, #b20710 100%);
-    border-radius: 4px;
-    cursor: pointer;
-    transition: transform 0.3s;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    padding: 10px;
-}
 
 .playlist-card-icon {
     font-size: 24px;
