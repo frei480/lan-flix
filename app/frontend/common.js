@@ -59,6 +59,17 @@ let currentPreviewVideo = null;
                 container.innerHTML = '<p class="no-videos">Error loading videos. Make sure the backend is running.</p>';
             }
         }
+        async function fetchVideo(videoId) {
+            const container = document.getElementById('video-container');
+            try {
+                const response = await fetch(`${BACKEND_URL}/videos/${videoId}`);
+                let video = await response.json();
+                return video;   
+            } catch (error) {
+                console.error('Error fetching video info:', error);
+                container.innerHTML = '<p class="no-videos">Error loading video. Make sure the backend is running.</p>';
+            }
+        }
 
         async function fetchPlaylists() {
             try {
@@ -202,13 +213,14 @@ let currentPreviewVideo = null;
             container.innerHTML = html;
         }
 
-        function playVideo(videoId, startTime = 0) {
+        async function playVideo(videoId, startTime = 0) {
             const modal = document.getElementById('video-modal');
             const player = document.getElementById('video-player');
             const title = document.getElementById('modal-title');
             const srt = document.getElementById('video-subtitles');
 
-            const video = allVideos.find(v => v.id === videoId);
+            const video = await fetchVideo(videoId); //allVideos.find(v => v.id === videoId);
+            
             if (video) {
                 title.textContent = video.title;
             }
