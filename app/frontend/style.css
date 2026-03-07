@@ -70,7 +70,7 @@ html {
 }
 
 .hero-content {
-    max-width: 600px;
+    max-width: 800px;
 }
 
 .hero h1 {
@@ -86,7 +86,7 @@ html {
 }
 
 .hero-search-container {
-    max-width: 600px;
+    max-width: 800px;
     margin: 0 auto;
     position: relative;
 }
@@ -95,9 +95,10 @@ html {
     display: flex;
     align-items: center;
     background-color: #fff;
-    border-radius: 4px;
+    border-radius: 10px;
     padding: 5px 15px;
     width: 100%;
+    min-width: 800px;
 }
 
 .hero-search input {
@@ -106,6 +107,7 @@ html {
     font-size: 16px;
     outline: none;
     padding: 8px;
+    width: 800px;
 }
 
 .hero-search button {
@@ -300,8 +302,7 @@ html {
 }
 
 .content-section h2 {
-    font-size: 16px;
-    margin-bottom: 10px;
+    font-size: 16px;    
 }
 
 .video-row {
@@ -454,6 +455,12 @@ html {
 
 .category-tab.active {
     border-bottom-color: #e50914;
+}
+
+.manage-playlist {
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .search-bar {

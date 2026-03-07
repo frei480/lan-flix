@@ -140,9 +140,8 @@ let currentPreviewVideo = null;
                     `;
                     return;
                 }
-
-                let html = `
-                    <h2>${playlist.name}</h2>
+                document.getElementById('playlist-name').innerHTML = `<h2>${playlist.name}</h2>`;
+                let html = `                    
                     <div class="video-row">
                 `;
 

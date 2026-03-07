@@ -42,9 +42,12 @@
                 <button class="category-tab active" onclick="filterCategory('all', this)">All Videos</button>           
                 <button class="category-tab" onclick="showPlaylists()">My Lists</button>
             </div>
-            <button class="back-btn" id="back-btn" style="display: none;" onclick="goBack()">
-                ← Back to Browse
-            </button>
+            <div class="manage-playlist">
+                <button class="back-btn" id="back-btn" style="display: none;" onclick="goBack()">
+                    ← Back to Browse
+                </button>
+                <div id="playlist-name"></div>
+            </div>
             <div class="content-section-handle" onclick="toggleContentSection()">
                 <span>Videos & Playlists</span>
                 <div id="pin-icon" class="pin-btn">
