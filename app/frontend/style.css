@@ -389,10 +389,32 @@
             display: flex;
         }
 
-        .modal-content {
-            width: 80%;
-            max-width: 1200px;
+.modal-body {
+    display: flex; /* Делаем колонки */
+    flex-direction: row;
+    width: 90%;
+    max-width: 1400px;
+    max-height: 80vh; /* Ограничиваем высоту, чтобы не выходило за экран */
+    align-items: stretch; /* Магия: делает колонки одинаковой высоты */
+    gap: 20px; /* Отступ между видео и текстом */
+}
+.modal-content {
+    flex: 3; /* Видео шире (занимает 3 части) */
+    background: #000;
+    display: flex;
+    flex-direction: column;
         }
+.modal-subtitles {
+    flex: 1; /* Текст уже (занимает 1 часть) */
+    background: #1a1a1a;
+    color: #ccc;
+    padding: 20px;
+    border-radius: 4px;
+    
+    /* Важно для одинаковой высоты: */
+    overflow-y: auto; /* Появляется скролл, если текста много */
+    box-sizing: border-box;
+}
 
         .modal-content video {
             width: 100%;

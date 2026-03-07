@@ -202,26 +202,12 @@ let currentPreviewVideo = null;
             container.innerHTML = html;
         }
 
-        function playVideo(videoId) {
-            const modal = document.getElementById('video-modal');
-            const player = document.getElementById('video-player');
-            const title = document.getElementById('modal-title');
-            
-            const video = allVideos.find(v => v.id === videoId);
-            if (video) {
-                title.textContent = video.title;
-            }
-
-            player.src = `${BACKEND_URL}/videos/${videoId}/stream`;
-            modal.classList.add('active');
-            player.play();
-        }
-
         function playVideo(videoId, startTime = 0) {
             const modal = document.getElementById('video-modal');
             const player = document.getElementById('video-player');
             const title = document.getElementById('modal-title');
-            
+            const srt = document.getElementById('video-subtitles');
+
             const video = allVideos.find(v => v.id === videoId);
             if (video) {
                 title.textContent = video.title;
@@ -238,8 +224,13 @@ let currentPreviewVideo = null;
 
                 player.play();
             });
-
             modal.classList.add('active');
+            
+            let html = ``;
+            if (video.transcription) {
+                html +=`<p>${video.transcription.replace(/\n/g, '<br>')}</p>`;
+            }
+            srt.innerHTML = html;
         }
 
         function closeModal() {

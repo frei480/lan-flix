@@ -57,11 +57,14 @@
 
     <div class="video-player-modal" id="video-modal">
         <span class="close-modal" onclick="closeModal()">&times;</span>
-        <div class="modal-content">
-            <video id="video-player" controls>
-                Your browser does not support the video tag.
-            </video>
-            <h2 id="modal-title" style="margin-top: 20px;"></h2>
+        <div class="modal-body">
+            <div class="modal-content">
+                <video id="video-player" controls>
+                    Your browser does not support the video tag.
+                </video>
+                <h2 id="modal-title" style="margin-top: 20px;"></h2>
+            </div>
+            <div class="modal-subtitles" id="video-subtitles"></div>
         </div>
     </div>
 
