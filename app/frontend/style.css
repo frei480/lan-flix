@@ -376,8 +376,13 @@ html {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    animation: scroll-text 10s linear infinite;
+    display: inline-block;
 }
-
+@keyframes scroll-text {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-100%); } /* Двигаем влево */
+}
 .video-player-modal {
     display: none;
     position: fixed;
