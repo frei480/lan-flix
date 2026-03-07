@@ -91,7 +91,7 @@ let currentPreviewVideo = null;
                 }
             });
             document.getElementById('back-btn').style.display = 'none';
-            
+            document.getElementById('playlist-name').innerHTML = ` `;
             const container = document.getElementById('video-container');
             
             if (allPlaylists.length === 0) {
@@ -173,6 +173,7 @@ let currentPreviewVideo = null;
 
         function goBack() {
             currentView = 'playlists';
+            document.getElementById('playlist-name').innerHTML = ` `;
             document.getElementById('back-btn').style.display = 'none';
             showPlaylists();
         }
