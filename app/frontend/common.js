@@ -162,7 +162,7 @@ async function fetchVideos() {
         if (newVideos.length > 0) {
             renderItems(newVideos, 'video', true);
             allVideos.push(...newVideos);
-            skip+=limit;
+            skip += newVideos.length;
         } 
     } catch (error) {
         console.error('Error fetching videos:', error);
