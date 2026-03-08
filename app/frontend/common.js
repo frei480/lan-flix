@@ -265,6 +265,26 @@ function goBack() {
     showPlaylists();
 }
 
+function createVideoCard(item, startTime = 0) {
+    const card = document.createElement('div');
+    card.className = 'video-card';
+    card.addEventListener('click', () => playVideo(item.id));
+    card.addEventListener('mouseenter', (e) => startPreview(item.id, card, startTime || 5));
+    card.addEventListener('mouseleave', () => stopPreview());
+        
+    card.innerHTML = `
+    <div class="video-card-placeholder">
+        <span style="font-size: 48px;">🎬</span>
+    </div>
+    <div class="video-card-overlay">
+        <div class="video-card-title"></div>
+    </div>
+`;
+    card.querySelector('.video-card-title').textContent = item.title;
+    
+    return card;
+}
+
 /**
  * Отрисовывает элементы (видео или плейлисты) в строке.
  * @param {Array<Object>} items - Массив элементов для отрисовки.
@@ -291,24 +311,11 @@ function renderItems(items, type = 'video', append = false) {
     const fragment = document.createDocumentFragment();
     // 3. Генерируем HTML для каждого элемента
     items.forEach(item => {        
-        const card = document.createElement('div');
         if (type === 'video') {
-            card.className = 'video-card';
-            card.addEventListener('click', () => playVideo(item.id));
-            card.addEventListener('mouseenter', (e) => startPreview(item.id, card));
-            card.addEventListener('mouseleave', () => stopPreview());
-                
-            card.innerHTML = `
-            <div class="video-card-placeholder">
-                <span style="font-size: 48px;">🎬</span>
-            </div>
-            <div class="video-card-overlay">
-                <div class="video-card-title"></div>
-            </div>
-        `;
-            card.querySelector('.video-card-title').textContent = item.title;
-            
+            const card = createVideoCard(item);
+            fragment.appendChild(card);        
         } else if (type === 'playlist') {
+            const card = document.createElement('div');
             card.className = 'playlist-card';
             card.addEventListener('click', () => showPlaylistVideos(item.id));
             card.innerHTML = `
@@ -319,8 +326,8 @@ function renderItems(items, type = 'video', append = false) {
                 </div>`;
             card.querySelector('.playlist-card-title').textContent = item.name;
             card.querySelector('.playlist-card-count').textContent = `${item.video_count || 0} videos`;
+            fragment.appendChild(card);        
         }
-        fragment.appendChild(card);        
     });
     // Вставляем строго перед якорем
     row.insertBefore(fragment, loaderAnchor);
@@ -429,20 +436,23 @@ function heroSearch() {
                 const searchResultCard = document.createElement('div');
                 searchResultCard.className = 'search-result-card';
                 searchResultCard.addEventListener('click', () => playVideo(result.id, timestamp || 0));
-                searchResultCard.innerHTML
-                 = `<div class="video-card">
-                        <span style="font-size: 24px;">🎬</span>
-                    </div>
-                    <div class="search-result-info">
-                        <div class="search-result-card-title"></div>
-                        <div class="search-result-card-snippet"></div>
-                    </div>                    
+                const videoCard = createVideoCard(result, timestamp || 0);
+
+                //const videoCard = searchResultCard.querySelector('.video-card');
+                const infoDiv = document.createElement('div');
+                infoDiv.className = 'search-result-info';
+                infoDiv.innerHTML = `
+                    <div class="search-result-card-title"></div>
+                    <div class="search-result-card-snippet"></div>
                 `;
-                const videoCard = searchResultCard.querySelector('.video-card');
+                 infoDiv.querySelector('.search-result-card-title').textContent = result.title;
+                infoDiv.querySelector('.search-result-card-snippet').textContent = snippet;
+                searchResultCard.appendChild(videoCard);
+                searchResultCard.appendChild(infoDiv);
                 searchResultCard.addEventListener('mouseenter', (e) => startPreview(result.id, videoCard, timestamp || 0));
                 searchResultCard.addEventListener('mouseleave', () => stopPreview());
-                searchResultCard.querySelector('.search-result-card-title').textContent = result.title;
-                searchResultCard.querySelector('.search-result-card-snippet').textContent = snippet;
+                
+                
                 fragment.appendChild(searchResultCard);
             });
             resultsList.appendChild(fragment);
