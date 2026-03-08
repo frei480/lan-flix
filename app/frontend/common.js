@@ -69,16 +69,16 @@ document.addEventListener('DOMContentLoaded', function() {
     initInfiniteScroll();
     fetchVideos();
     fetchPlaylists();
-
-    document.addEventListener('wheel', function(e) {
-        if (e.target.classList.contains('video-row') || e.target.closest('.video-row')) {
-                const row = e.target.classList.contains('video-row') ? e.target : e.target.closest('.video-row');
+    const videoRow = document.getElementById('video-row');
+        if (videoRow) {
+            videoRow.addEventListener('wheel', (e) => {
                 if (e.deltaY !== 0) {
                     e.preventDefault();
-                    row.scrollLeft += e.deltaY;
-                }            
+                    videoRow.scrollLeft += e.deltaY;
+                }
+            }, { passive: false });
         }
-    }, { passive: false });
+
 });
 
 /**
