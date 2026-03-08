@@ -427,7 +427,6 @@ function heroSearch() {
                 resultsList.innerHTML = '<div style="padding: 20px; text-align: center; color: #aaa;">No results found</div>';
                 return;
             }
-
             
             const fragment = document.createDocumentFragment();
             results.forEach(result => {
@@ -438,20 +437,18 @@ function heroSearch() {
                 searchResultCard.addEventListener('click', () => playVideo(result.id, timestamp || 0));
                 const videoCard = createVideoCard(result, timestamp || 0);
 
-                //const videoCard = searchResultCard.querySelector('.video-card');
                 const infoDiv = document.createElement('div');
                 infoDiv.className = 'search-result-info';
                 infoDiv.innerHTML = `
                     <div class="search-result-card-title"></div>
                     <div class="search-result-card-snippet"></div>
                 `;
-                 infoDiv.querySelector('.search-result-card-title').textContent = result.title;
+                infoDiv.querySelector('.search-result-card-title').textContent = result.title;
                 infoDiv.querySelector('.search-result-card-snippet').textContent = snippet;
                 searchResultCard.appendChild(videoCard);
                 searchResultCard.appendChild(infoDiv);
                 searchResultCard.addEventListener('mouseenter', (e) => startPreview(result.id, videoCard, timestamp || 0));
                 searchResultCard.addEventListener('mouseleave', () => stopPreview());
-                
                 
                 fragment.appendChild(searchResultCard);
             });
