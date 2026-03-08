@@ -265,21 +265,7 @@ function goBack() {
     showPlaylists();
 }
 
-/**
- * Отображает переданный массив видео, очищая предыдущие.
- * @param {Array<Object>} videos - Массив видео объектов.
- */
-function displayVideos(videos) {
-    const row = document.getElementById('video-row');
-    
-    row.querySelectorAll('.video-card').forEach(card => card.remove());
 
-    if (videos.length === 0) {
-        row.insertAdjacentHTML('afterbegin', `<p class="no-videos">No videos found. Click "+ Add Videos" to scan and load videos.</p>`);
-        return;
-    }
-    appendVideos(videos);
-}
 
 /**
  * Отрисовывает элементы (видео или плейлисты) в строке.
@@ -306,22 +292,27 @@ function renderItems(items, type = 'video', append = false) {
     }
 
     // 3. Генерируем HTML для каждого элемента
-    items.forEach(item => {
-        let html = '';
+    items.forEach(item => {        
+        const card = document.createElement('div');
         if (type === 'video') {
-            html = `
-                <div class="video-card" onclick="playVideo(${item.id})"
-                    onmouseenter="startPreview(${item.id}, this)"
-                    onmouseleave="stopPreview()">
-                    <div style="width: 100%; height: 100%; background: linear-gradient(45deg, #333, #444); display: flex; align-items: center; justify-content: center;">
-                        <span style="font-size: 48px;">🎬</span>
-                    </div>
-                    <div class="video-card-overlay">
-                        <div class="video-card-title">${item.title}</div>
-                    </div>
-                </div>`;
+            card.className = 'video-card';
+            card.addEventListener('click', () => playVideo(item.id));
+            card.addEventListener('mouseenter', (e) => startPreview(item.id, card));
+            card.addEventListener('mouseleave', () => stopPreview());
+            
+            card.innerHTML = `
+            <div class="video-card-placeholder">
+                <span style="font-size: 48px;">🎬</span>
+            </div>
+            <div class="video-card-overlay">
+                <div class="video-card-title">${item.title}</div>
+            </div>
+        `;
+            
         } else if (type === 'playlist') {
-            html = `
+            card.className = 'playlist-card';
+            card.addEventListener('click', () => showPlaylistVideos(item.id));
+            card.innerHTML = `
                 <div class="playlist-card" onclick="showPlaylistVideos(${item.id})">
                     <div class="playlist-card-icon">📁</div>
                     <div class="playlist-card-title">${item.name}</div>
@@ -330,37 +321,10 @@ function renderItems(items, type = 'video', append = false) {
         }
         
         // Вставляем строго перед якорем
-        loaderAnchor.insertAdjacentHTML('beforebegin', html);
+        loaderAnchor.before(card);
     });
 }
 
-/**
- * Добавляет видео карточки в строку перед якорем.
- * @param {Array<Object>} videos - Массив видео объектов.
- */
-function appendVideos(videos) {
-    const anchor = document.getElementById('scroll-anchor');
-
-    videos.forEach(video => {
-        const card = document.createElement('div');
-        card.className = 'video-card';
-        card.onclick = () => playVideo(video.id);
-        card.onmouseenter = (e) => startPreview(video.id, card);
-        card.onmouseleave = () => stopPreview();
-        
-        card.innerHTML = `
-            <div style="width: 100%; height: 100%; background: linear-gradient(45deg, #333, #444); display: flex; align-items: center; justify-content: center;">
-                <span style="font-size: 48px;">🎬</span>
-            </div>
-            <div class="video-card-overlay">
-                <div class="video-card-title">${video.title}</div>
-            </div>
-        `;
-        
-        // Вставляем карточку ПЕРЕД якорем
-        anchor.insertAdjacentHTML('beforebegin', card.outerHTML);
-    });
-}
 
 /**
  * Воспроизводит видео в модальном окне.
@@ -562,9 +526,15 @@ document.getElementById('video-modal').addEventListener('click', function(e) {
     }
 });
 
-document.getElementById('scan-modal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        closeScanModal();
+document.addEventListener('DOMContentLoaded', () => {
+
+    const scanModal = document.getElementById('scan-modal');
+    if (scanModal) {
+        scanModal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeScanModal();
+            }
+        });
     }
 });
 

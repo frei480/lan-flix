@@ -427,6 +427,16 @@ html {
   0% { transform: translateX(0%); }
   100% { transform: translateX(-100%); } /* Двигаем влево */
 }
+
+.video-card-placeholder {
+    width: 100%;
+    height: 100%; 
+    background: linear-gradient(45deg, #333, #444); 
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+}
+
 .video-player-modal {
     display: none;
     position: fixed;
