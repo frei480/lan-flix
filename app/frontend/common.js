@@ -290,7 +290,7 @@ function renderItems(items, type = 'video', append = false) {
         }
         return;
     }
-
+    const fragment = document.createDocumentFragment();
     // 3. Генерируем HTML для каждого элемента
     items.forEach(item => {        
         const card = document.createElement('div');
@@ -299,15 +299,16 @@ function renderItems(items, type = 'video', append = false) {
             card.addEventListener('click', () => playVideo(item.id));
             card.addEventListener('mouseenter', (e) => startPreview(item.id, card));
             card.addEventListener('mouseleave', () => stopPreview());
-            
+                
             card.innerHTML = `
             <div class="video-card-placeholder">
                 <span style="font-size: 48px;">🎬</span>
             </div>
             <div class="video-card-overlay">
-                <div class="video-card-title">${item.title}</div>
+                <div class="video-card-title"></div>
             </div>
         `;
+            card.querySelector('.video-card-title').textContent = item.title;
             
         } else if (type === 'playlist') {
             card.className = 'playlist-card';
@@ -315,14 +316,16 @@ function renderItems(items, type = 'video', append = false) {
             card.innerHTML = `
                 <div class="playlist-card" onclick="showPlaylistVideos(${item.id})">
                     <div class="playlist-card-icon">📁</div>
-                    <div class="playlist-card-title">${item.name}</div>
-                    <div class="playlist-card-count">${item.video_count || 0} videos</div>
+                    <div class="playlist-card-title"></div>
+                    <div class="playlist-card-count"></div>
                 </div>`;
+            card.querySelector('.playlist-card-title').textContent = item.name;
+            card.querySelector('.playlist-card-count').textContent = `${item.video_count || 0} videos`;
         }
-        
-        // Вставляем строго перед якорем
-        loaderAnchor.before(card);
+        fragment.appendChild(card);        
     });
+    // Вставляем строго перед якорем
+    row.insertBefore(fragment, loaderAnchor);
 }
 
 
