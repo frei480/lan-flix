@@ -310,8 +310,40 @@ html {
     gap: 10px;
     overflow-x: auto;
     overflow-y: hidden;
-    padding-bottom: 10px;
+    padding: 10px 20px;
+    /* padding-bottom: 10px; */
+    justify-content: flex-start;
+    align-items: center; 
+}
+
+.loader-anchor {
+    width: 20px;
+    height: 90px;
+    flex-shrink: 0;
+    align-self: center;
+    display: flex;
+    align-items: center;
     justify-content: center;
+    transition: width 0.3s;
+}
+
+.loader-anchor.loading::after {
+    content: "";
+    width: 30px;
+    height: 30px;
+    border: 3px solid #333;
+    border-top: 3px solid #e50914;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.loader-anchor.loading {
+    width: 80px; 
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 .video-row::-webkit-scrollbar {
@@ -564,21 +596,6 @@ html {
 
 .scan-btn:hover {
     background-color: #f40612;
-}
-
-.loader {
-    border: 3px solid #333;
-    border-top: 3px solid #e50914;
-    border-radius: 50%;
-    width: 30px;
-    height: 30px;
-    animation: spin 1s linear infinite;
-    margin: 20px auto;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
 }
 
 .scan-modal {
