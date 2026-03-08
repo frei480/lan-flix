@@ -265,6 +265,12 @@ function goBack() {
     showPlaylists();
 }
 
+/**
+ * Создает DOM-элемент карточки видео.
+ * @param {Object} item - Объект видео с полями id и title.
+ * @param {number} [startTime=0] - Время начала предпросмотра в секундах.
+ * @returns {HTMLDivElement} Созданный элемент карточки.
+ */
 function createVideoCard(item, startTime = 0) {
     const card = document.createElement('div');
     card.className = 'video-card';
@@ -573,10 +579,11 @@ function extractTimestamp(text) {
  * Запускает предпросмотр видео с задержкой 300 мс.
  * @param {number} videoId - ID видео.
  * @param {HTMLElement} element - Элемент, на котором происходит наведение.
+ * @param {number} [startTime=5] - Время начала предпросмотра в секундах.
  */
-function startPreview(videoId, element) {
+function startPreview(videoId, element, startTime = 5) {
     hoverDelay = setTimeout(() => {
-        actuallyStartPreview(videoId, element);
+        actuallyStartPreview(videoId, element, startTime);
     }, 300); // старт через 300мс
 }
 
