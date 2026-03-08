@@ -265,8 +265,6 @@ function goBack() {
     showPlaylists();
 }
 
-
-
 /**
  * Отрисовывает элементы (видео или плейлисты) в строке.
  * @param {Array<Object>} items - Массив элементов для отрисовки.
@@ -423,27 +421,31 @@ function heroSearch() {
                 return;
             }
 
-            let html = '';
-
+            
+            const fragment = document.createDocumentFragment();
             results.forEach(result => {
                 const snippet = result.snippet || '';
                 const timestamp = extractTimestamp(snippet);
-
-                html += `
-                    <div class="search-result-card" 
-                        onclick="playVideo(${result.id}, ${timestamp || 0})">
-                        <div class="video-card" onmouseenter="startPreview(${result.id}, this, ${timestamp || 0})"
-                        onmouseleave="stopPreview()">
-                            <span style="font-size: 24px;">🎬</span>
-                        </div>
-                        <div class="search-result-info">
-                            <div class="search-result-card-title">${result.title}</div>
-                            <div class="search-result-card-snippet">${snippet}</div>
-                        </div>
+                const searchResultCard = document.createElement('div');
+                searchResultCard.className = 'search-result-card';
+                searchResultCard.addEventListener('click', () => playVideo(result.id, timestamp || 0));
+                searchResultCard.innerHTML
+                 = `<div class="video-card">
+                        <span style="font-size: 24px;">🎬</span>
                     </div>
+                    <div class="search-result-info">
+                        <div class="search-result-card-title"></div>
+                        <div class="search-result-card-snippet"></div>
+                    </div>                    
                 `;
+                const videoCard = searchResultCard.querySelector('.video-card');
+                searchResultCard.addEventListener('mouseenter', (e) => startPreview(result.id, videoCard, timestamp || 0));
+                searchResultCard.addEventListener('mouseleave', () => stopPreview());
+                searchResultCard.querySelector('.search-result-card-title').textContent = result.title;
+                searchResultCard.querySelector('.search-result-card-snippet').textContent = snippet;
+                fragment.appendChild(searchResultCard);
             });
-            resultsList.innerHTML = html;
+            resultsList.appendChild(fragment);
         })
         .catch(error => {
             console.error('Error searching:', error);
