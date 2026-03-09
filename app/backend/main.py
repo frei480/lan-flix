@@ -8,6 +8,11 @@ from typing import Annotated, Any
 import uvicorn
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.docs import (
+    get_redoc_html,
+    get_swagger_ui_html,
+    get_swagger_ui_oauth2_redirect_html,
+)
 from fastapi.responses import StreamingResponse
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -36,7 +41,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Url shortener", lifespan=lifespan)
+app = FastAPI(title="Url shortener", lifespan=lifespan, docs_url=None, redoc_url=None)
 
 # Add CORS middleware
 app.add_middleware(
@@ -46,6 +51,40 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.get("/docs", include_in_schema=False)
+async def custom_swagger_ui_html(request: Request):
+    logger.info("Custom Swagger UI")
+    logger.info(request.url.hostname)
+    return get_swagger_ui_html(
+        openapi_url=app.openapi_url,  # type: ignore
+        title=app.title + " - Swagger UI",
+        oauth2_redirect_url=app.swagger_ui_oauth2_redirect_url,
+        swagger_js_url=f"http://{request.url.hostname}/static/js/swagger-ui-bundle.js",
+        swagger_css_url=f"http://{request.url.hostname}/static/css/swagger-ui.css",
+    )
+
+
+@app.get(app.swagger_ui_oauth2_redirect_url, include_in_schema=False)
+async def swagger_ui_redirect():
+    return get_swagger_ui_oauth2_redirect_html()
+
+
+@app.get("/redoc", include_in_schema=False)
+async def redoc_html(request: Request):
+    return (
+        get_redoc_html(
+            openapi_url=app.openapi_url,  # type: ignore
+            title=app.title + " - ReDoc",
+            redoc_js_url=f"http://{request.url.hostname}/static/js/redoc.standalone.js",
+        ),
+    )
+
+
+@app.get("/users/{username}")
+async def read_user(username: str):
+    return {"message": f"Hello {username}"}
 
 
 @app.get("/health", status_code=200)
