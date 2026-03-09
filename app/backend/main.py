@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Annotated, Any
 
+import aiofiles
 import uvicorn
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -128,8 +129,8 @@ async def scan_and_load_videos(db: SessionDep):
 
         transcription_content = None
         if transcription_path.is_file():
-            with open(transcription_path, "r", encoding="utf-8") as f:
-                transcription_content = f.read()
+            async with aiofiles.open(transcription_path, "r", encoding="utf-8") as f:
+                transcription_content = await f.read()
 
         db_video = await crud.get_video_by_filepath(db, filepath=filepath)
 
@@ -258,14 +259,14 @@ async def stream_video(video_id: int, request: Request, db: SessionDep):
         length = end - start + 1
 
         # Открываем файл и переходим к нужной позиции
-        def stream_in_chunks():
-            with open(video_path, mode="rb") as f:
-                f.seek(start)
+        async def stream_in_chunks():
+            async with aiofiles.open(video_path, mode="rb") as f:
+                await f.seek(start)
                 bytes_read = 0
                 while bytes_read < length:
                     # Читаем чанками, например по 64KB
                     chunk_size = min(length - bytes_read, 65536)
-                    chunk = f.read(chunk_size)
+                    chunk = await f.read(chunk_size)
                     if not chunk:
                         break  # Конец файла
                     yield chunk
