@@ -39,7 +39,6 @@ services:
       password: ${password}
     volumes:
       - ${video_dir}:/app/videos # Монтируем локальную папку videos в контейнер
-      - ${video_dir}:/app/transcriptions # Монтируем локальную папку transcriptions в контейнер
     depends_on:
       db:
         condition: service_healthy
@@ -55,8 +54,11 @@ services:
       - "80:80" # Порт для доступа к фронтенду с хоста
     depends_on:
       - backend # Frontend зависит от backend, чтобы запросы к нему могли идти
+    volumes:      
+      - ${transcriptions_dir}:/usr/share/nginx/html/static/transcriptions # Монтируем локальную папку transcriptions в контейнер
     networks:
       - lanflix
+    
 networks:
   lanflix:
     driver: bridge
