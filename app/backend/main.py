@@ -73,12 +73,10 @@ async def swagger_ui_redirect():
 
 @app.get("/redoc", include_in_schema=False)
 async def redoc_html(request: Request):
-    return (
-        get_redoc_html(
-            openapi_url=app.openapi_url,  # type: ignore
-            title=app.title + " - ReDoc",
-            redoc_js_url=f"http://{request.url.hostname}/static/js/redoc.standalone.js",
-        ),
+    return get_redoc_html(
+        openapi_url=app.openapi_url,  # type: ignore
+        title=app.title + " - ReDoc",
+        redoc_js_url=f"http://{request.url.hostname}/static/js/redoc.standalone.js",
     )
 
 
