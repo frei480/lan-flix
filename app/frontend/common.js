@@ -371,11 +371,9 @@ async function playVideo(videoId, startTime = 0) {
     });
     modal.classList.add('active');
     
-    let html = ``;
     if (video.transcription) {
-        html +=`<p>${video.transcription.replace(/\n/g, '<br>')}</p>`;
+        srt.innerText = video.transcription;
     }
-    srt.innerHTML = html;
 }
 
 /**
