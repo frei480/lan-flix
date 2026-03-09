@@ -351,9 +351,20 @@ async function playVideo(videoId, startTime = 0) {
     const player = document.getElementById('video-player');
     const title = document.getElementById('modal-title');
     const srt = document.getElementById('video-subtitles');
-
-    const video = await fetchVideo(videoId); //allVideos.find(v => v.id === videoId);
     
+    const video = await fetchVideo(videoId); //allVideos.find(v => v.id === videoId);
+    const trackpath = video.filepath.replace('/app/videos', '/static/transcriptions').replace(/\.[^/.]+$/, '.vtt');
+    const response = await fetch(trackpath);
+    if (response.ok) {
+        const track = document.createElement('track');
+        track.kind = 'subtitles';
+        track.label = 'Русский';
+        track.srclang = 'ru';
+        track.src = trackpath;
+        player.appendChild(track);
+    }
+
+
     if (video) {
         title.textContent = video.title;
     }
