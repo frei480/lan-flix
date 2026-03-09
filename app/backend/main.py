@@ -55,8 +55,6 @@ app.add_middleware(
 
 @app.get("/docs", include_in_schema=False)
 async def custom_swagger_ui_html(request: Request):
-    logger.info("Custom Swagger UI")
-    logger.info(request.url.hostname)
     return get_swagger_ui_html(
         openapi_url=app.openapi_url,  # type: ignore
         title=app.title + " - Swagger UI",
