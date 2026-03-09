@@ -32,6 +32,19 @@ from app.backend.schemas import (
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
+def is_path_allowed(filepath: Path) -> bool:
+    """
+    Проверяет, что путь находится внутри разрешённой директории (VIDEOS_DIR).
+    Возвращает True, если путь разрешён, иначе False.
+    """
+    try:
+        resolved = filepath.resolve()
+        return resolved.is_relative_to(cfg.videos_dir_absolute)
+    except (ValueError, OSError):
+        return False
+
+
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
 
@@ -208,6 +221,10 @@ async def stream_video(video_id: int, request: Request, db: SessionDep):
     video_path = Path(db_video.filepath)
     if not video_path.is_file():
         raise HTTPException(status_code=404, detail="Video file not found on server")
+
+    # Проверяем, что путь находится внутри разрешённой директории
+    if not is_path_allowed(video_path):
+        raise HTTPException(status_code=403, detail="Access to this file is forbidden")
 
     # Получаем размер файла
     file_size = os.stat(video_path).st_size

@@ -1,3 +1,4 @@
+from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -14,6 +15,16 @@ class ConfigBase(BaseSettings):
     password: str
     VIDEOS_DIR: str = "videos"
     TRANSCRIPTIONS_DIR: str = "transcriptions"
+
+    @property
+    def videos_dir_absolute(self) -> Path:
+        """Возвращает абсолютный путь к директории с видео."""
+        return Path(self.VIDEOS_DIR).resolve()
+
+    @property
+    def transcriptions_dir_absolute(self) -> Path:
+        """Возвращает абсолютный путь к директории с транскрипциями."""
+        return Path(self.TRANSCRIPTIONS_DIR).resolve()
 
 
 cfg = ConfigBase()
