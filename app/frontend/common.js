@@ -351,17 +351,20 @@ async function playVideo(videoId, startTime = 0) {
     const player = document.getElementById('video-player');
     const title = document.getElementById('modal-title');
     const srt = document.getElementById('video-subtitles');
+    if(player.querySelector('track')) player.querySelector('track').remove();
     
     const video = await fetchVideo(videoId); //allVideos.find(v => v.id === videoId);
     const trackpath = video.filepath.replace('/app/videos', '/static/transcriptions').replace(/\.[^/.]+$/, '.vtt');
     const response = await fetch(trackpath);
     if (response.ok) {
-        const track = document.createElement('track');
+        const track = document.createElement('track', {method: 'HEAD'});
         track.kind = 'subtitles';
         track.label = 'Русский';
         track.srclang = 'ru';
         track.src = trackpath;
         player.appendChild(track);
+    }else{
+        player.querySelector('track').remove();
     }
 
 
@@ -395,6 +398,7 @@ function closeModal() {
     const player = document.getElementById('video-player');
     player.pause();
     player.src = '';
+    player.querySelector('track').remove();
     modal.classList.remove('active');
 }
 
