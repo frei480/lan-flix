@@ -17,7 +17,9 @@
     "myLists": "Мои списки"
   },
   "buttons": {
-    "backToBrowse": "Назад к просмотру"
+    "backToBrowse": "Назад к просмотру",
+    "share": "Поделиться",
+    "shareWithTimecode": "Поделиться с тайм-кодом"
   },
   "section": {
     "videosPlaylists": "Видео и плейлисты"

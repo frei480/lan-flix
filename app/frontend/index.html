@@ -76,7 +76,13 @@
                 <video id="video-player" controls>
                     <span data-i18n="video.notSupported">Your browser does not support the video tag.</span>
                 </video>
-                <h2 id="modal-title" style="margin-top: 20px;"></h2>
+                <div class="video-controls-bar">
+                    <h2 id="modal-title" style="margin: 0; flex: 1;"></h2>
+                    <button class="share-button" onclick="copyShareLink()" data-i18n="buttons.shareWithTimecode" title="Share with current timestamp">
+                        <span class="share-icon">🔗</span>
+                        <span class="share-text" data-i18n="buttons.share">Share</span>
+                    </button>
+                </div>
             </div>
             <div class="modal-subtitles" id="video-subtitles"></div>
         </div>

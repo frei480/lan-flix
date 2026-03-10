@@ -35,6 +35,12 @@ let allVideos = [];
 let allPlaylists = [];
 
 /**
+ * Текущий воспроизводимый видео ID.
+ * @type {number|null}
+ */
+let currentVideoId = null;
+
+/**
  * Текущий вид контента: 'all', 'playlists', 'playlist_detail', 'filter'.
  * @type {string}
  */
@@ -87,6 +93,7 @@ document.addEventListener('DOMContentLoaded', function() {
     fetchVideos();
     fetchPlaylists();
     updateLanguageButtons();
+    handleUrlParams();
     const videoRow = document.getElementById('video-row');
         if (videoRow) {
             videoRow.addEventListener('wheel', (e) => {
@@ -369,7 +376,8 @@ async function playVideo(videoId, startTime = 0) {
     const player = document.getElementById('video-player');
     const title = document.getElementById('modal-title');
     const srt = document.getElementById('video-subtitles');
-    if(player.querySelector('track')) player.querySelector('track').remove();
+    const existingTrack = player.querySelector('track');
+    if(existingTrack) existingTrack.remove();
     
     const video = await fetchVideo(videoId); //allVideos.find(v => v.id === videoId);
     const trackpath = video.filepath.replace('/app/videos', '/static/transcriptions').replace(/\.[^/.]+$/, '.vtt');
@@ -381,14 +389,18 @@ async function playVideo(videoId, startTime = 0) {
         track.srclang = 'ru';
         track.src = trackpath;
         player.appendChild(track);
-    }else{
-        player.querySelector('track').remove();
     }
 
 
     if (video) {
         title.textContent = video.title;
     }
+
+    // Сохраняем текущий ID видео для функции поделиться
+    currentVideoId = videoId;
+    
+    // Обновляем кнопку поделиться каждый раз когда видео загружается
+    setupShareButton();
 
     player.src = `${BACKEND_URL}/videos/${videoId}/stream`;
 
@@ -416,8 +428,133 @@ function closeModal() {
     const player = document.getElementById('video-player');
     player.pause();
     player.src = '';
-    player.querySelector('track').remove();
+    const track = player.querySelector('track');
+    if (track) track.remove();
     modal.classList.remove('active');
+}
+
+/**
+ * Форматирует время в секундах в строку формата MM:SS или H:MM:SS
+ * @param {number} seconds - Время в секундах
+ * @returns {string} Отформатированное время
+ */
+function formatTime(seconds) {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+    
+    if (hours > 0) {
+        return `${hours}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+    return `${minutes}:${String(secs).padStart(2, '0')}`;
+}
+
+/**
+ * Генерирует ссылку для совместного использования видео с временной меткой
+ * @returns {string} URL для совместного использования
+ */
+function generateShareLink() {
+    if (!currentVideoId) return '';
+    
+    const player = document.getElementById('video-player');
+    const currentTime = Math.floor(player.currentTime);
+    
+    // Получаем текущий URL без параметров
+    const baseUrl = window.location.origin + window.location.pathname;
+    
+    // Формируем URL с параметрами
+    const shareUrl = `${baseUrl}?video=${currentVideoId}&t=${currentTime}`;
+    
+    return shareUrl;
+}
+
+/**
+ * Копирует ссылку с временной меткой в буфер обмена и показывает обратную связь
+ */
+async function copyShareLink() {
+    const shareUrl = generateShareLink();
+    
+    if (!shareUrl) {
+        alert('Please play a video first');
+        return;
+    }
+    
+    try {
+        // Копируем в буфер обмена
+        await navigator.clipboard.writeText(shareUrl);
+        
+        // Показываем обратную связь
+        const shareButton = document.querySelector('.share-button');
+        const originalText = shareButton.innerHTML;
+        const player = document.getElementById('video-player');
+        const timeDisplay = formatTime(Math.floor(player.currentTime));
+        
+        shareButton.innerHTML = `<span class="share-icon">✓</span><span class="share-text">Copied!</span>`;
+        shareButton.classList.add('copied');
+        
+        // Возвращаем оригинальное состояние через 2 секунды
+        setTimeout(() => {
+            shareButton.classList.remove('copied');
+            updateShareButtonTime();
+        }, 2000);
+    } catch (error) {
+        console.error('Failed to copy to clipboard:', error);
+        alert('Failed to copy link to clipboard');
+    }
+}
+
+/**
+ * Обновляет состояние кнопки поделиться при воспроизведении видео
+ */
+function updateShareButtonTime() {
+    const shareButton = document.querySelector('.share-button');
+    
+    if (!shareButton || !currentVideoId) return;
+    // Кнопка просто остается видимой и активной
+}
+
+/**
+ * Инициализирует обновление времени на кнопке при проигрывании видео
+ */
+function setupShareButton() {
+    const player = document.getElementById('video-player');
+    
+    if (!player) return;
+    
+    // Удаляем старые слушатели
+    player.removeEventListener('timeupdate', updateShareButtonTime);
+    
+    // Устанавливаем новый слушатель для обновления времени
+    player.addEventListener('timeupdate', updateShareButtonTime);
+    
+    // Обновляем время сразу
+    updateShareButtonTime();
+}
+
+/**
+ * Парсит параметры URL и возвращает объект с ними
+ * @returns {Object} Объект с параметрами (video, t)
+ */
+function getUrlParams() {
+    const params = new URLSearchParams(window.location.search);
+    return {
+        video: params.get('video') ? parseInt(params.get('video'), 10) : null,
+        t: params.get('t') ? parseInt(params.get('t'), 10) : 0
+    };
+}
+
+/**
+ * Обрабатывает параметры URL при загрузке страницы
+ */
+function handleUrlParams() {
+    const params = getUrlParams();
+    
+    if (params.video) {
+        // Небольшая задержка для убедиться, что DOM полностью загружен
+        setTimeout(() => {
+            playVideo(params.video, params.t);
+        }, 500);
+    }
 }
 
 document.getElementById('hero-search-input').addEventListener('keypress', function(e) {
