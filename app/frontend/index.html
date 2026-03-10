@@ -10,17 +10,21 @@
     <nav class="navbar">
         <div class="logo">LAN-FLIX</div>
         <div style="display: flex; align-items: center; gap: 20px;">
-            <a href="/" class="home-link">Home</a>            
+            <a href="/" class="home-link" data-i18n="nav.home">Home</a>
+            <div class="language-switcher">
+                <button class="lang-btn active" onclick="changeLanguage('ru')">RU</button>
+                <button class="lang-btn" onclick="changeLanguage('en')">EN</button>
+            </div>            
         </div>
     </nav>
 
     <div class="hero">
         <div class="hero-content">
-            <h1>Watch Videos Locally</h1>
-            <p>Stream your personal video collection</p>
+            <h1 data-i18n="hero.title">Watch Videos Locally</h1>
+            <p data-i18n="hero.subtitle">Stream your personal video collection</p>
             <div class="hero-search-container">
                 <div class="hero-search">
-                    <input type="text" id="hero-search-input" placeholder="Search for movies, shows and more...">
+                    <input type="text" id="hero-search-input" data-i18n-placeholder="hero.search.placeholder" placeholder="Search for movies, shows and more...">
                     <button onclick="heroSearch()">🔍</button>
                 </div>
                 <div id="hero-results"></div>
@@ -30,7 +34,7 @@
 
     <div class="search-results-section" id="search-results-section">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
-            <h2 id="search-results-title">Search Results</h2>
+            <h2 id="search-results-title" data-i18n="search.results">Search Results</h2>
             <button class="close-search" onclick="clearSearch()">✕</button>
         </div>
         <div id="search-results-list"></div>
@@ -39,17 +43,17 @@
     <div class="content-section">
         <div class="content-header">
             <div class="category-tabs">
-                <button class="category-tab active" onclick="filterCategory('all', this)">All Videos</button>           
-                <button class="category-tab" onclick="showPlaylists()">My Lists</button>
+                <button class="category-tab active" onclick="filterCategory('all', this)" data-i18n="tabs.allVideos">All Videos</button>           
+                <button class="category-tab" onclick="showPlaylists()" data-i18n="tabs.myLists">My Lists</button>
             </div>
             <div class="manage-playlist">
                 <button class="back-btn" id="back-btn" style="display: none;" onclick="goBack()">
-                    ← Back to Browse
+                    ← <span data-i18n="buttons.backToBrowse">Back to Browse</span>
                 </button>
                 <div id="playlist-name"></div>
             </div>
             <div class="content-section-handle" onclick="toggleContentSection()">
-                <span>Videos & Playlists</span>
+                <span data-i18n="section.videosPlaylists">Videos & Playlists</span>
                 <div id="pin-icon" class="pin-btn">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
             <path d="M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z" />
@@ -70,7 +74,7 @@
         <div class="modal-body">
             <div class="modal-content">
                 <video id="video-player" controls>
-                    Your browser does not support the video tag.
+                    <span data-i18n="video.notSupported">Your browser does not support the video tag.</span>
                 </video>
                 <h2 id="modal-title" style="margin-top: 20px;"></h2>
             </div>
@@ -79,6 +83,7 @@
     </div>
 
 
+<script src="/static/js/i18n.js"></script>
 <script src="/common.js"></script>
 </body>
 </html>

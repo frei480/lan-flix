@@ -1,0 +1,44 @@
+{
+  "nav": {
+    "home": "Home"
+  },
+  "hero": {
+    "title": "Watch Videos Locally",
+    "subtitle": "Stream your personal video collection",
+    "search": {
+      "placeholder": "Search for movies, shows and more..."
+    }
+  },
+  "search": {
+    "results": "Search Results"
+  },
+  "tabs": {
+    "allVideos": "All Videos",
+    "myLists": "My Lists"
+  },
+  "buttons": {
+    "backToBrowse": "Back to Browse"
+  },
+  "section": {
+    "videosPlaylists": "Videos & Playlists"
+  },
+  "video": {
+    "notSupported": "Your browser does not support the video tag."
+  },
+  "console": {
+    "fetchingMore": "Fetching more videos..."
+  },
+  "errors": {
+    "scanLoad": "Error scanning and loading videos:",
+    "scanLoadDetails": "Error scanning and loading videos. Check console for details.",
+    "loadVideos": "Error loading videos.",
+    "loadVideo": "Error loading video. Make sure the backend is running.",
+    "search": "Error searching:"
+  },
+  "messages": {
+    "videosLoaded": "Loaded/Updated {{count}} videos."
+  },
+  "language": {
+    "select": "Language"
+  }
+}

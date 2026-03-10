@@ -655,3 +655,31 @@ html {
     background-color: #666;
     color: #fff;
 }
+
+.language-switcher {
+    display: flex;
+    gap: 5px;
+}
+
+.lang-btn {
+    background: transparent;
+    border: 1px solid #666;
+    color: #666;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+    transition: all 0.2s;
+}
+
+.lang-btn:hover {
+    border-color: #fff;
+    color: #fff;
+}
+
+.lang-btn.active {
+    background-color: #e50914;
+    border-color: #e50914;
+    color: #fff;
+}

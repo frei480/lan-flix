@@ -5,6 +5,23 @@
  */
 const BACKEND_URL = '/api';
 
+function updateLanguageButtons() {
+    const currentLang = localStorage.getItem('language') || 'ru';
+    const buttons = document.querySelectorAll('.lang-btn');
+    buttons.forEach(btn => {
+        if (btn.textContent.toLowerCase() === currentLang) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+}
+
+document.addEventListener('languageChanged', function(e) {
+    updateDynamicTranslations();
+    updateLanguageButtons();
+});
+
 /**
  * Массив всех загруженных видео.
  * @type {Array<Object>}
@@ -69,6 +86,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initInfiniteScroll();
     fetchVideos();
     fetchPlaylists();
+    updateLanguageButtons();
     const videoRow = document.getElementById('video-row');
         if (videoRow) {
             videoRow.addEventListener('wheel', (e) => {
@@ -96,7 +114,7 @@ function initInfiniteScroll() {
     };
     const observer = new IntersectionObserver((entries) => {
         if (entries[0].isIntersecting && !isLoading && hasMore && currentView=='all')  {
-            console.log('Fetching more videos...');
+            console.log(t('console.fetchingMore'));
             fetchVideos();
         }
     }, options);
@@ -130,12 +148,12 @@ async function scanAndLoadVideos() {
     try {
         const response = await fetch(`${BACKEND_URL}/videos/scan-and-load/`, { method: 'POST' });
         const data = await response.json();
-        alert(`Loaded/Updated ${data.length} videos.`);
+        alert(t('messages.videosLoaded', { count: data.length }));
         fetchVideos();
         fetchPlaylists();
     } catch (error) {
-        console.error('Error scanning and loading videos:', error);
-        alert('Error scanning and loading videos. Check console for details.');
+        console.error(t('errors.scanLoad'), error);
+        alert(t('errors.scanLoadDetails'));
         fetchVideos();
     }
 }
@@ -165,10 +183,10 @@ async function fetchVideos() {
             skip += newVideos.length;
         } 
     } catch (error) {
-        console.error('Error fetching videos:', error);
+        console.error(t('errors.loadVideos'), error);
         const row = document.getElementById('video-row');
         if (row && skip === 0) {
-            row.innerHTML = '<p class="no-videos">Error loading videos.</p>';
+            row.innerHTML = `<p class="no-videos">${t('errors.loadVideos')}</p>`;
         }
     } finally {
         isLoading=false;
@@ -189,8 +207,8 @@ async function fetchVideo(videoId) {
         let video = await response.json();
         return video;   
     } catch (error) {
-        console.error('Error fetching video info:', error);
-        container.innerHTML = '<p class="no-videos">Error loading video. Make sure the backend is running.</p>';
+        console.error(t('errors.loadVideo'), error);
+        container.innerHTML = `<p class="no-videos">${t('errors.loadVideo')}</p>`;
     }
 }
 
@@ -474,8 +492,8 @@ function heroSearch() {
             resultsList.appendChild(fragment);
         })
         .catch(error => {
-            console.error('Error searching:', error);
-            resultsList.innerHTML = '<div style="padding: 20px; text-align: center; color: #aaa;">Error searching</div>';
+            console.error(t('errors.search'), error);
+            resultsList.innerHTML = `<div style="padding: 20px; text-align: center; color: #aaa;">${t('errors.search')}</div>`;
         });
 }
 
