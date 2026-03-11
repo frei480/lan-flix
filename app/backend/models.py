@@ -1,5 +1,4 @@
 from uuid import uuid4
-from typing import TYPE_CHECKING
 
 from tortoise import fields, models
 

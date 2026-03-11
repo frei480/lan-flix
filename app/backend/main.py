@@ -3,11 +3,11 @@ import mimetypes
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Any
 
 import aiofiles
 import uvicorn
-from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import (
     get_redoc_html,
@@ -15,12 +15,11 @@ from fastapi.openapi.docs import (
     get_swagger_ui_oauth2_redirect_html,
 )
 from fastapi.responses import StreamingResponse
-from tortoise import Tortoise
 
 from app.backend import crud
 from app.backend.auth import CurrentUserDep, create_access_token, verify_password
 from app.backend.config import cfg
-from app.backend.database import init_db, close_db
+from app.backend.database import close_db, init_db
 from app.backend.schemas import (
     LoginRequest,
     PlaylistCreate,
@@ -50,7 +49,6 @@ def is_path_allowed(filepath: Path) -> bool:
 
 
 # tortoise handles connections internally; no session dependency is injected
-
 
 
 @asynccontextmanager
@@ -425,9 +423,7 @@ async def admin_update_video(
 
 
 @app.delete("/admin/videos/{video_id}")
-async def admin_delete_video(
-    video_id: int, current_user: CurrentUserDep
-):
+async def admin_delete_video(video_id: int, current_user: CurrentUserDep):
     """Удалить видео"""
     db_video = await crud.get_video(video_id=video_id)
     if not db_video:

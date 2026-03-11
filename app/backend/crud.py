@@ -1,7 +1,6 @@
 from typing import Any
 
 from tortoise import Tortoise
-from tortoise.transactions import in_transaction
 
 from app.backend.auth import hash_password
 from app.backend.models import Playlist, User, Video
@@ -28,9 +27,7 @@ async def create_video(video: VideoCreate) -> Video:
     return await Video.create(**video.model_dump())
 
 
-async def update_video(
-    video_id: int, video: VideoUpdate
-) -> Video | None:
+async def update_video(video_id: int, video: VideoUpdate) -> Video | None:
     db_video = await get_video(video_id)
     if db_video:
         update_data = video.model_dump(exclude_unset=True)
@@ -46,9 +43,7 @@ async def delete_video(video_id: int) -> Video | None:
     return db_video
 
 
-async def search_videos_by_transcription(
-    query: str
-) -> list[dict[str, Any]]:
+async def search_videos_by_transcription(query: str) -> list[dict[str, Any]]:
     # raw SQL approach, identical to previous implementation but executed through the
     # underlying connection object. This keeps the full‑text search logic unchanged.
     search_query = """
@@ -65,7 +60,12 @@ async def search_videos_by_transcription(
     connection = Tortoise.get_connection("default")
     rows = await connection.execute_query_dict(search_query, {"query": query})
     return [
-        {"id": r["id"], "title": r["title"], "filepath": r["filepath"], "snippet": r["snippet"]}
+        {
+            "id": r["id"],
+            "title": r["title"],
+            "filepath": r["filepath"],
+            "snippet": r["snippet"],
+        }
         for r in rows
     ]
 
@@ -86,9 +86,7 @@ async def get_playlist_by_folder(folder_path: str) -> Playlist | None:
     return await Playlist.filter(folder_path=folder_path).first()
 
 
-async def get_playlists(
-    skip: int = 0, limit: int = 100
-) -> list[dict]:
+async def get_playlists(skip: int = 0, limit: int = 100) -> list[dict]:
     playlists = await Playlist.all().offset(skip).limit(limit)
     playlist_data: list[dict] = []
     for playlist in playlists:
@@ -109,7 +107,9 @@ async def create_playlist(playlist: PlaylistCreate) -> Playlist:
     return await Playlist.create(**playlist.model_dump())
 
 
-async def update_playlist(playlist_id: int, playlist: PlaylistUpdate) -> Playlist | None:
+async def update_playlist(
+    playlist_id: int, playlist: PlaylistUpdate
+) -> Playlist | None:
     db_playlist = await get_playlist(playlist_id)
     if db_playlist:
         update_data = playlist.model_dump(exclude_unset=True)
