@@ -1,4 +1,5 @@
 from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -15,6 +16,7 @@ class ConfigBase(BaseSettings):
     password: str
     VIDEOS_DIR: str = "videos"
     TRANSCRIPTIONS_DIR: str = "transcriptions"
+    SECRET_KEY: str
 
     @property
     def videos_dir_absolute(self) -> Path:

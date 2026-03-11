@@ -4,7 +4,7 @@ LanFlix — локальный видеосервис для просмотра 
 
 Коротко:
 - Бэкенд на FastAPI; фронтенд — простой HTML/CSS/JS.
-- Хранение метаданных и транскрипций в PostgreSQL (через SQLModel).
+- Хранение метаданных и транскрипций в PostgreSQL (через Tortoise ORM).
 - Поддержка Docker и Docker Compose для быстрого развёртывания.
 
 ## Быстрый старт (Docker)
@@ -50,14 +50,10 @@ docker-compose up -d --build
 ```bash
 python -m venv venv
 venv\\Scripts\\activate    # Windows
-pip install -r requirements.txt
+pip install -e .
 ```
 
-2. Примените миграции (alembic):
-
-```bash
-alembic upgrade head
-```
+2. При первом запуске ORM сама создаст таблицы; для управления миграциями используется `aerich` (см. `aerich init-db` и `aerich migrate`).
 
 3. Запустите бэкенд для разработки:
 
@@ -79,7 +75,6 @@ uvicorn app.backend.main:app --reload
 ```
 app/backend/      # FastAPI-приложение (main.py, models.py, crud.py, schemas.py, database.py)
 app/frontend/     # Простой фронтенд (index.html, style.css)
-alembic/          # Миграции базы данных
 videos/           # Рекомендуется монтировать как volume
 transcriptions/   # Рекомендуется монтировать как volume
 docker-compose.yml

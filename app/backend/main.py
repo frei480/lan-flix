@@ -15,16 +15,19 @@ from fastapi.openapi.docs import (
     get_swagger_ui_oauth2_redirect_html,
 )
 from fastapi.responses import StreamingResponse
-from sqlmodel.ext.asyncio.session import AsyncSession
+from tortoise import Tortoise
 
 from app.backend import crud
+from app.backend.auth import CurrentUserDep, create_access_token, verify_password
 from app.backend.config import cfg
-from app.backend.database import get_session
+from app.backend.database import init_db, close_db
 from app.backend.schemas import (
+    LoginRequest,
     PlaylistCreate,
     PlaylistInDB,
     PlaylistWithVideos,
     SearchResult,
+    TokenResponse,
     VideoCreate,
     VideoInDB,
     VideoUpdate,
@@ -46,13 +49,16 @@ def is_path_allowed(filepath: Path) -> bool:
         return False
 
 
-SessionDep = Annotated[AsyncSession, Depends(get_session)]
+# tortoise handles connections internally; no session dependency is injected
+
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Start app")
+    logger.info("starting up")
+    await init_db()
     yield
+    await close_db()
 
 
 app = FastAPI(title="Url shortener", lifespan=lifespan, docs_url=None, redoc_url=None)
@@ -103,7 +109,7 @@ def health_check():
 
 
 @app.post("/videos/scan-and-load/", response_model=list[VideoInDB])
-async def scan_and_load_videos(db: SessionDep):
+async def scan_and_load_videos():
     """
     Сканирует папки с видео и транскрипциями и загружает их метаданные в БД.
     Обновляет существующие записи, если транскрипция изменилась.
@@ -111,7 +117,7 @@ async def scan_and_load_videos(db: SessionDep):
     loaded_videos: list[VideoInDB] = []
 
     # Сначала создаем плейлисты из папок
-    await create_playlists_from_folders(db)
+    await create_playlists_from_folders()
 
     video_files = [
         f
@@ -132,11 +138,11 @@ async def scan_and_load_videos(db: SessionDep):
             async with aiofiles.open(transcription_path, "r", encoding="utf-8") as f:
                 transcription_content = await f.read()
 
-        db_video = await crud.get_video_by_filepath(db, filepath=filepath)
+        db_video = await crud.get_video_by_filepath(filepath=filepath)
 
         # Определяем плейлист по папке видео
         folder_path = str(video_path.parent)
-        db_playlist = await crud.get_playlist_by_folder(db, folder_path=folder_path)
+        db_playlist = await crud.get_playlist_by_folder(folder_path=folder_path)
         playlist_id = db_playlist.id if db_playlist else None
 
         if db_video:
@@ -151,7 +157,6 @@ async def scan_and_load_videos(db: SessionDep):
                     playlist_id=playlist_id,
                 )
                 db_video = await crud.update_video(
-                    db,
                     db_video.id,  # type: ignore
                     video_update,
                 )
@@ -164,14 +169,14 @@ async def scan_and_load_videos(db: SessionDep):
                 transcription=transcription_content,
                 playlist_id=playlist_id,
             )
-            db_video = await crud.create_video(db, video_create)
+            db_video = await crud.create_video(video_create)
             if db_video:
                 loaded_videos.append(VideoInDB.model_validate(db_video))
 
     return loaded_videos
 
 
-async def create_playlists_from_folders(db: SessionDep):
+async def create_playlists_from_folders():
     """
     Создает плейлисты на основе папок с видео.
     """
@@ -188,7 +193,7 @@ async def create_playlists_from_folders(db: SessionDep):
 
     # Создаем плейлисты для каждой папки
     for folder_path in video_folders:
-        db_playlist = await crud.get_playlist_by_folder(db, folder_path=folder_path)
+        db_playlist = await crud.get_playlist_by_folder(folder_path=folder_path)
         if not db_playlist:
             playlist_name = Path(folder_path).name
             playlist_create = PlaylistCreate(
@@ -196,26 +201,26 @@ async def create_playlists_from_folders(db: SessionDep):
                 folder_path=folder_path,
                 description=f"Плейлист для папки {playlist_name}",
             )
-            await crud.create_playlist(db, playlist_create)
+            await crud.create_playlist(playlist_create)
 
 
 @app.get("/videos/", response_model=list[VideoInDB])
-async def read_videos(db: SessionDep, skip: int = 0, limit: int = 100):
-    videos = await crud.get_videos(db, skip=skip, limit=limit)
+async def read_videos(skip: int = 0, limit: int = 100):
+    videos = await crud.get_videos(skip=skip, limit=limit)
     return [VideoInDB.model_validate(video) for video in videos]
 
 
 @app.get("/videos/{video_id}", response_model=VideoInDB)
-async def read_video(video_id: int, db: SessionDep):
-    db_video = await crud.get_video(db, video_id=video_id)
+async def read_video(video_id: int):
+    db_video = await crud.get_video(video_id=video_id)
     if db_video is None:
         raise HTTPException(status_code=404, detail="Video not found")
     return VideoInDB.model_validate(db_video)
 
 
 @app.get("/videos/{video_id}/stream")
-async def stream_video(video_id: int, request: Request, db: SessionDep):
-    db_video = await crud.get_video(db, video_id=video_id)
+async def stream_video(video_id: int, request: Request):
+    db_video = await crud.get_video(video_id=video_id)
     if db_video is None:
         raise HTTPException(status_code=404, detail="Video not found")
 
@@ -298,20 +303,53 @@ async def stream_video(video_id: int, request: Request, db: SessionDep):
 
 
 @app.get("/search/", response_model=list[SearchResult])
-async def search_videos(query: str, db: SessionDep):
+async def search_videos(query: str):
     if not query:
         raise HTTPException(status_code=400, detail="Search query cannot be empty")
 
-    results: list[dict[str, Any]] = await crud.search_videos_by_transcription(db, query)
+    results: list[dict[str, Any]] = await crud.search_videos_by_transcription(query)
     return [SearchResult(**result) for result in results]
 
 
+@app.put("/videos/{video_id}")
+async def update_video(video_id: int, video: VideoUpdate):
+    db_video = await crud.get_video(video_id=video_id)
+    if not db_video:
+        raise HTTPException(status_code=404, detail="Video not found")
+
+    video_update = VideoUpdate(
+        title=video.title,
+        filepath=video.filepath,
+        transcription=video.transcription,
+        playlist_id=video.playlist_id,
+    )
+    db_video = await crud.update_video(
+        db_video.id,  # type: ignore
+        video_update,
+    )
+    if db_video:
+        return VideoInDB.model_validate(db_video)
+    else:
+        raise HTTPException(status_code=404, detail="Video not found")
+
+
+@app.delete("/videos/{video_id}")
+async def delete_video(video_id: int):
+    db_video = await crud.get_video(video_id=video_id)
+    if not db_video:
+        raise HTTPException(status_code=404, detail="Video not found")
+
+    db_video = await crud.delete_video(video_id=video_id)
+    if db_video:
+        return VideoInDB.model_validate(db_video)
+
+
 @app.delete("/clear-database/")
-async def clear_database(db: SessionDep):
+async def clear_database():
     """
     Очищает таблицу videos в базе данных.
     """
-    await crud.clear_database(db)
+    await crud.clear_database()
     return {"message": "Database cleared successfully"}
 
 
@@ -319,24 +357,84 @@ async def clear_database(db: SessionDep):
 
 
 @app.get("/playlists/", response_model=list[PlaylistInDB])
-async def read_playlists(db: SessionDep, skip: int = 0, limit: int = 100):
-    playlists = await crud.get_playlists(db, skip=skip, limit=limit)
+async def read_playlists(skip: int = 0, limit: int = 100):
+    playlists = await crud.get_playlists(skip=skip, limit=limit)
     return [PlaylistInDB(**playlist) for playlist in playlists]
 
 
 @app.get("/playlists/{playlist_id}", response_model=PlaylistWithVideos)
-async def read_playlist(playlist_id: int, db: SessionDep):
-    db_playlist = await crud.get_playlist(db, playlist_id=playlist_id)
+async def read_playlist(playlist_id: int):
+    db_playlist = await crud.get_playlist(playlist_id=playlist_id)
     if db_playlist is None:
         raise HTTPException(status_code=404, detail="Playlist not found")
 
     # Получаем видео для плейлиста
-    videos = await crud.get_videos_by_playlist(db, playlist_id=playlist_id)
+    videos = await crud.get_videos_by_playlist(playlist_id=playlist_id)
     playlist_with_videos = PlaylistWithVideos(
         **PlaylistInDB.model_validate(db_playlist).model_dump(),
         videos=[VideoInDB.model_validate(video) for video in videos],
     )
     return playlist_with_videos
+
+
+@app.post("/admin/login", response_model=TokenResponse)
+async def login(request: LoginRequest):
+    """Вход пользователя"""
+    # Поиск пользователя в БД
+    user = await crud.get_user_by_name(user_name=request.username)
+
+    if not user or not verify_password(request.password, user.hashed_password):
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+
+    access_token = create_access_token(username=user.username)
+    return {"access_token": access_token}
+
+
+@app.post("/admin/register")
+async def register(request: LoginRequest):
+    """Регистрация нового пользователя (без защиты - используйте осторожно!)"""
+    user = await crud.get_user_by_name(user_name=request.username)
+    if user:
+        raise HTTPException(status_code=400, detail="Username already exists")
+    user = await crud.create_user(request.username, request.password)
+    return user
+
+
+@app.get("/admin/videos/", response_model=list[VideoInDB])
+async def admin_read_videos(
+    current_user: CurrentUserDep,  # Требует валидный токен!
+    skip: int = 0,
+    limit: int = 100,
+):
+    """Получить список видео (только для авторизованных)"""
+    videos = await crud.get_videos(skip=skip, limit=limit)
+    return [VideoInDB.model_validate(video) for video in videos]
+
+
+@app.put("/admin/videos/{video_id}", response_model=VideoInDB)
+async def admin_update_video(
+    video_id: int, video: VideoUpdate, current_user: CurrentUserDep
+):
+    """Обновить видео"""
+    db_video = await crud.get_video(video_id=video_id)
+    if not db_video:
+        raise HTTPException(status_code=404, detail="Video not found")
+
+    updated_video = await crud.update_video(video_id, video)
+    return VideoInDB.model_validate(updated_video)
+
+
+@app.delete("/admin/videos/{video_id}")
+async def admin_delete_video(
+    video_id: int, current_user: CurrentUserDep
+):
+    """Удалить видео"""
+    db_video = await crud.get_video(video_id=video_id)
+    if not db_video:
+        raise HTTPException(status_code=404, detail="Video not found")
+
+    await crud.delete_video(video_id=video_id)
+    return {"detail": "Video deleted successfully"}
 
 
 if __name__ == "__main__":

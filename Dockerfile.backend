@@ -7,13 +7,11 @@ WORKDIR /app
 COPY pyproject.toml .
 COPY uv.lock .
 RUN pip install --no-cache-dir -e .
-COPY alembic.ini .
-COPY alembic/ ./alembic/
 # Копируем остальное приложение
 COPY app/backend/ /app/app/backend
 ENV PATH="/app/.venv/bin:$PATH"
 
 EXPOSE 8000
 
-# Команда для запуска Миграций и Uvicorn
-CMD ["sh", "-c", "alembic upgrade head && python -m app.backend.main"]
+# запуск приложения (при старте схема создаётся автоматически)
+CMD ["sh", "-c", "python -m app.backend.main"]

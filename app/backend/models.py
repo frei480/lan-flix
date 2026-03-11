@@ -1,29 +1,45 @@
-import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
-from sqlmodel import Field, SQLModel
+from uuid import uuid4
+from typing import TYPE_CHECKING
+
+from tortoise import fields, models
 
 
-class Video(SQLModel, table=True):
-    __tablename__ = "videos"
+class Playlist(models.Model):
+    id = fields.IntField(pk=True)
+    name = fields.CharField(max_length=255, index=True)
+    folder_path = fields.CharField(max_length=1000, unique=True, index=True)
+    description = fields.TextField(null=True)
 
-    id: int | None = Field(default=None, primary_key=True, index=True)
-    title: str = Field(index=True)
-    filepath: str = Field(unique=True, index=True)
-    duration_seconds: int | None = None
-    transcription: str | None = None
-    search_vector: str | None = Field(
-        default=None,
-        sa_column=sa.Column(postgresql.TSVECTOR(), nullable=True),
+    class Meta:
+        table = "playlists"
+
+
+class Video(models.Model):
+    id = fields.IntField(pk=True)
+    title = fields.CharField(max_length=255, index=True)
+    filepath = fields.CharField(max_length=1000, unique=True, index=True)
+    duration_seconds = fields.IntField(null=True)
+    transcription = fields.TextField(null=True)
+    # PostgreSQL-specific tsvector column for full‑text index
+    search_vector = fields.TextField(
+        null=True, db_column="search_vector", db_type="TSVECTOR"
     )
-    playlist_id: int | None = Field(default=None, foreign_key="playlists.id")
 
-    __pydantic_exclude__ = {"search_vector"}
+    playlist: fields.ForeignKeyNullableRelation["Playlist"] = fields.ForeignKeyField(
+        "models.Playlist", related_name="videos", null=True
+    )
+
+    class Meta:
+        table = "videos"
+        indexes = [("search_vector",)]
 
 
-class Playlist(SQLModel, table=True):
-    __tablename__ = "playlists"
+class User(models.Model):
+    id = fields.UUIDField(pk=True, default=uuid4)
+    username = fields.CharField(max_length=150, unique=True, index=True)
+    email = fields.CharField(max_length=255, unique=True, null=True)
+    hashed_password = fields.CharField(max_length=255)
+    disabled = fields.BooleanField(default=False)
 
-    id: int | None = Field(default=None, primary_key=True, index=True)
-    name: str = Field(index=True)
-    folder_path: str = Field(unique=True, index=True)
-    description: str | None = None
+    class Meta:
+        table = "users"
