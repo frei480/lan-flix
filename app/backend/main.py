@@ -92,6 +92,15 @@ register_tortoise(app, config=TORTOISE_ORM)
 
 @app.get("/docs", include_in_schema=False)
 async def custom_swagger_ui_html(request: Request):
+    """
+    Возвращает HTML-страницу Swagger UI для интерактивной документации API.
+
+    Args:
+        request (Request): Объект запроса FastAPI.
+
+    Returns:
+        HTMLResponse: Страница Swagger UI с настроенными статическими ресурсами.
+    """
     return get_swagger_ui_html(
         openapi_url=app.openapi_url,  # type: ignore
         title=app.title + " - Swagger UI",
@@ -103,11 +112,26 @@ async def custom_swagger_ui_html(request: Request):
 
 @app.get(app.swagger_ui_oauth2_redirect_url, include_in_schema=False)
 async def swagger_ui_redirect():
+    """
+    Обрабатывает редирект OAuth2 для Swagger UI.
+
+    Returns:
+        HTMLResponse: HTML-страница для завершения OAuth2 аутентификации.
+    """
     return get_swagger_ui_oauth2_redirect_html()
 
 
 @app.get("/redoc", include_in_schema=False)
 async def redoc_html(request: Request):
+    """
+    Возвращает HTML-страницу ReDoc для альтернативной документации API.
+
+    Args:
+        request (Request): Объект запроса FastAPI.
+
+    Returns:
+        HTMLResponse: Страница ReDoc с настроенными статическими ресурсами.
+    """
     return get_redoc_html(
         openapi_url=app.openapi_url,  # type: ignore
         title=app.title + " - ReDoc",
@@ -117,11 +141,26 @@ async def redoc_html(request: Request):
 
 @app.get("/users/{username}")
 async def read_user(username: str):
+    """
+    Тестовый эндпоинт для приветствия пользователя.
+
+    Args:
+        username (str): Имя пользователя.
+
+    Returns:
+        dict: Сообщение с приветствием.
+    """
     return {"message": f"Hello {username}"}
 
 
 @app.get("/health", status_code=200)
 def health_check():
+    """
+    Проверка работоспособности сервера (health check).
+
+    Returns:
+        dict: Статус "ok", если сервер работает.
+    """
     return {"status": "ok"}
 
 
@@ -223,12 +262,34 @@ async def create_playlists_from_folders():
 
 @app.get("/videos/", response_model=list[VideoInDB])
 async def read_videos(skip: int = 0, limit: int = 100):
+    """
+    Возвращает список видео с пагинацией.
+
+    Args:
+        skip (int): Количество видео для пропуска (по умолчанию 0).
+        limit (int): Максимальное количество видео для возврата (по умолчанию 100).
+
+    Returns:
+        list[VideoInDB]: Список объектов видео.
+    """
     videos = await crud.get_videos(skip=skip, limit=limit)
     return [VideoInDB.model_validate(video) for video in videos]
 
 
 @app.get("/videos/{video_id}", response_model=VideoInDB)
 async def read_video(video_id: int):
+    """
+    Возвращает видео по его идентификатору.
+
+    Args:
+        video_id (int): Идентификатор видео.
+
+    Raises:
+        HTTPException: 404, если видео не найдено.
+
+    Returns:
+        VideoInDB: Объект видео.
+    """
     db_video = await crud.get_video(video_id=video_id)
     if db_video is None:
         raise HTTPException(status_code=404, detail="Video not found")
@@ -237,6 +298,25 @@ async def read_video(video_id: int):
 
 @app.get("/videos/{video_id}/stream")
 async def stream_video(video_id: int, request: Request):
+    """
+    Потоковая передача видеофайла с поддержкой диапазонов (Range requests).
+
+    Поддерживает HTTP Range заголовки для возобновляемой загрузки и стриминга.
+    Если запрос содержит заголовок Range, возвращает часть файла (код 206).
+    Иначе возвращает весь файл (код 200).
+
+    Args:
+        video_id (int): Идентификатор видео в базе данных.
+        request (Request): Объект запроса FastAPI.
+
+    Raises:
+        HTTPException: 404, если видео или файл не найдены.
+        HTTPException: 403, если доступ к файлу запрещён.
+        HTTPException: 416, если диапазон некорректен.
+
+    Returns:
+        StreamingResponse: Потоковый ответ с видеофайлом.
+    """
     db_video = await crud.get_video(video_id=video_id)
     if db_video is None:
         raise HTTPException(status_code=404, detail="Video not found")
@@ -321,15 +401,49 @@ async def stream_video(video_id: int, request: Request):
 
 @app.get("/search/", response_model=list[SearchResult])
 async def search_videos(query: str):
+    """
+    Поиск видео по тексту транскрипции.
+
+    Args:
+        query (str): Поисковый запрос (не может быть пустым).
+
+    Raises:
+        HTTPException: 400, если запрос пустой.
+        HTTPException: 500, если произошла внутренняя ошибка при поиске.
+
+    Returns:
+        list[SearchResult]: Список результатов поиска с информацией о видео.
+    """
     if not query:
         raise HTTPException(status_code=400, detail="Search query cannot be empty")
 
-    results: list[dict[str, Any]] = await crud.search_videos_by_transcription(query)
-    return [SearchResult(**result) for result in results]
+    logger.info(f"Search request received: query='{query}'")
+    try:
+        results: list[dict[str, Any]] = await crud.search_videos_by_transcription(query)
+        logger.info(f"Search returned {len(results)} results")
+        return [SearchResult(**result) for result in results]
+    except Exception as e:
+        logger.exception(f"Search failed for query '{query}': {e}")
+        raise HTTPException(
+            status_code=500, detail="Internal server error during search"
+        )
 
 
 @app.put("/videos/{video_id}")
 async def update_video(video_id: int, video: VideoUpdate):
+    """
+    Обновляет метаданные видео.
+
+    Args:
+        video_id (int): Идентификатор видео для обновления.
+        video (VideoUpdate): Объект с новыми данными видео.
+
+    Raises:
+        HTTPException: 404, если видео не найдено.
+
+    Returns:
+        VideoInDB: Обновлённый объект видео.
+    """
     db_video = await crud.get_video(video_id=video_id)
     if not db_video:
         raise HTTPException(status_code=404, detail="Video not found")
@@ -352,6 +466,18 @@ async def update_video(video_id: int, video: VideoUpdate):
 
 @app.delete("/videos/{video_id}")
 async def delete_video(video_id: int):
+    """
+    Удаляет видео из базы данных.
+
+    Args:
+        video_id (int): Идентификатор видео для удаления.
+
+    Raises:
+        HTTPException: 404, если видео не найдено.
+
+    Returns:
+        VideoInDB: Удалённый объект видео (перед удалением).
+    """
     db_video = await crud.get_video(video_id=video_id)
     if not db_video:
         raise HTTPException(status_code=404, detail="Video not found")
@@ -375,12 +501,34 @@ async def clear_database():
 
 @app.get("/playlists/", response_model=list[PlaylistInDB])
 async def read_playlists(skip: int = 0, limit: int = 100):
+    """
+    Возвращает список плейлистов с пагинацией.
+
+    Args:
+        skip (int): Количество плейлистов для пропуска (по умолчанию 0).
+        limit (int): Максимальное количество плейлистов для возврата (по умолчанию 100).
+
+    Returns:
+        list[PlaylistInDB]: Список объектов плейлистов.
+    """
     playlists = await crud.get_playlists(skip=skip, limit=limit)
     return [PlaylistInDB(**playlist) for playlist in playlists]
 
 
 @app.get("/playlists/{playlist_id}", response_model=PlaylistWithVideos)
 async def read_playlist(playlist_id: int):
+    """
+    Возвращает плейлист по его идентификатору вместе с видео.
+
+    Args:
+        playlist_id (int): Идентификатор плейлиста.
+
+    Raises:
+        HTTPException: 404, если плейлист не найден.
+
+    Returns:
+        PlaylistWithVideos: Объект плейлиста с вложенным списком видео.
+    """
     db_playlist = await crud.get_playlist(playlist_id=playlist_id)
     if db_playlist is None:
         raise HTTPException(status_code=404, detail="Playlist not found")
@@ -425,8 +573,6 @@ async def register(request: LoginRequest):
     return user
 
 
-
-
 @app.get("/admin/videos/", response_model=list[VideoInDB])
 async def admin_read_videos(
     current_user: CurrentUserDep,  # Требует валидный токен!
@@ -443,11 +589,13 @@ async def admin_update_video(
     video_id: int, video: VideoUpdate, current_user: CurrentUserDep
 ):
     """Обновить видео"""
+    logger.info(f"Admin update video {video_id}: received data {video.model_dump()}")
     db_video = await crud.get_video(video_id=video_id)
     if not db_video:
         raise HTTPException(status_code=404, detail="Video not found")
 
     updated_video = await crud.update_video(video_id, video)
+    logger.info(f"Updated video {video_id}: {updated_video}")
     return VideoInDB.model_validate(updated_video)
 
 
