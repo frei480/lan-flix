@@ -15,8 +15,12 @@ class VideoCreate(VideoBase):
     pass
 
 
-class VideoUpdate(VideoBase):
-    pass
+class VideoUpdate(BaseModel):
+    title: Optional[str] = None
+    filepath: Optional[str] = None
+    duration_seconds: Optional[int] = None
+    transcription: Optional[str] = None
+    playlist_id: Optional[int] = None
 
 
 class VideoInDB(VideoBase):
