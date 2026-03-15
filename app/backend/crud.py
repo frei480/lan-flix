@@ -33,7 +33,7 @@ async def create_video(video: VideoCreate) -> Video:
 async def update_video(video_id: int, video: VideoUpdate) -> Video | None:
     db_video = await get_video(video_id)
     if db_video:
-        update_data = video.model_dump(exclude_unset=True)
+        update_data = video.model_dump(exclude_none=True)
         await db_video.update_from_dict(update_data)
         await db_video.save()
     return db_video
