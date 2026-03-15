@@ -372,15 +372,28 @@ function renderItems(items, type = 'video', append = false) {
  * @param {number} [startTime=0] - Время начала воспроизведения в секундах.
  */
 async function playVideo(videoId, startTime = 0) {
+    console.log('playVideo called with videoId:', videoId, 'startTime:', startTime);
     const modal = document.getElementById('video-modal');
     const player = document.getElementById('video-player');
     const title = document.getElementById('modal-title');
     const srt = document.getElementById('video-subtitles');
+    console.log('Modal:', modal, 'Player:', player);
+    if (!modal || !player) {
+        console.error('Modal or player element not found');
+        return;
+    }
     const existingTrack = player.querySelector('track');
     if(existingTrack) existingTrack.remove();
     
+    console.log('Fetching video metadata...');
     const video = await fetchVideo(videoId); //allVideos.find(v => v.id === videoId);
+    if (!video) {
+        console.error('Video not found or fetch failed');
+        return;
+    }
+    console.log('Video fetched:', video.title);
     const trackpath = video.filepath.replace('/app/videos', '/static/transcriptions').replace(/\.[^/.]+$/, '.vtt');
+    console.log('Track path:', trackpath);
     const response = await fetch(trackpath);
     if (response.ok) {
         const track = document.createElement('track', {method: 'HEAD'});
@@ -389,8 +402,10 @@ async function playVideo(videoId, startTime = 0) {
         track.srclang = 'ru';
         track.src = trackpath;
         player.appendChild(track);
+        console.log('Subtitles track added');
+    } else {
+        console.log('No subtitles found');
     }
-
 
     if (video) {
         title.textContent = video.title;
@@ -402,18 +417,40 @@ async function playVideo(videoId, startTime = 0) {
     // Обновляем кнопку поделиться каждый раз когда видео загружается
     setupShareButton();
 
-    player.src = `${BACKEND_URL}/videos/${videoId}/stream`;
+    const streamUrl = `${BACKEND_URL}/videos/${videoId}/stream`;
+    console.log('Setting player src to:', streamUrl);
+    player.src = streamUrl;
 
     player.addEventListener('loadedmetadata', function onLoad() {
+        console.log('Player loadedmetadata, duration:', player.duration);
         player.removeEventListener('loadedmetadata', onLoad);
 
         if (startTime && !isNaN(startTime)) {
+            console.log('Setting currentTime to', startTime);
             player.currentTime = startTime;
         }
 
-        player.play();
+        console.log('Attempting to play...');
+        const playPromise = player.play();
+        if (playPromise !== undefined) {
+            playPromise.then(() => {
+                console.log('Playback started successfully');
+            }).catch(error => {
+                console.error('Playback failed:', error);
+                // Autoplay may be blocked, try muted autoplay
+                console.log('Trying muted autoplay...');
+                player.muted = false;
+                player.play().catch(e => console.error('Muted autoplay also failed:', e));
+            });
+        }
     });
+    
+    player.addEventListener('error', (e) => {
+        console.error('Player error:', e, player.error);
+    });
+    
     modal.classList.add('active');
+    console.log('Modal opened');
     
     if (video.transcription) {
         srt.innerText = video.transcription;
@@ -479,27 +516,80 @@ async function copyShareLink() {
         return;
     }
     
-    try {
-        // Копируем в буфер обмена
-        await navigator.clipboard.writeText(shareUrl);
-        
-        // Показываем обратную связь
+    // Функция для копирования через современный Clipboard API
+    async function copyWithClipboardAPI(text) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(text);
+            return true;
+        }
+        return false;
+    }
+    
+    // Функция для копирования через устаревший document.execCommand
+    function copyWithExecCommand(text) {
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+            const successful = document.execCommand('copy');
+            document.body.removeChild(textArea);
+            return successful;
+        } catch (err) {
+            document.body.removeChild(textArea);
+            return false;
+        }
+    }
+    
+    // Функция для показа обратной связи
+    function showCopyFeedback(success) {
         const shareButton = document.querySelector('.share-button');
-        const originalText = shareButton.innerHTML;
-        const player = document.getElementById('video-player');
-        const timeDisplay = formatTime(Math.floor(player.currentTime));
+        if (!shareButton) return;
         
-        shareButton.innerHTML = `<span class="share-icon">✓</span><span class="share-text">Copied!</span>`;
-        shareButton.classList.add('copied');
+        if (success) {
+            shareButton.innerHTML = `<span class="share-icon">✓</span><span class="share-text">Copied!</span>`;
+            shareButton.classList.add('copied');
+            setTimeout(() => {
+                shareButton.classList.remove('copied');
+                updateShareButtonTime();
+            }, 2000);
+        } else {
+            // Если не удалось скопировать, показываем ссылку для ручного копирования
+            alert(`Copy failed. Please manually copy the link:\n\n${shareUrl}`);
+        }
+    }
+    
+    try {
+        let copied = false;
+        let method = 'none';
+        // Пробуем современный API
+        if (navigator.clipboard) {
+            try {
+                await navigator.clipboard.writeText(shareUrl);
+                copied = true;
+                method = 'clipboard API';
+            } catch (e) {
+                console.warn('Clipboard API error, falling back to execCommand:', e);
+                // Если modern API выдал ошибку, пробуем fallback
+                copied = copyWithExecCommand(shareUrl);
+                method = 'execCommand (fallback)';
+            }
+        } else {
+            console.warn('Clipboard API not available, using execCommand');
+            // Если Clipboard API недоступен, используем execCommand
+            copied = copyWithExecCommand(shareUrl);
+            method = 'execCommand';
+        }
         
-        // Возвращаем оригинальное состояние через 2 секунды
-        setTimeout(() => {
-            shareButton.classList.remove('copied');
-            updateShareButtonTime();
-        }, 2000);
+        console.log(`Copy ${copied ? 'succeeded' : 'failed'} via ${method}`);
+        showCopyFeedback(copied);
     } catch (error) {
         console.error('Failed to copy to clipboard:', error);
-        alert('Failed to copy link to clipboard');
+        showCopyFeedback(false);
     }
 }
 
@@ -547,13 +637,19 @@ function getUrlParams() {
  * Обрабатывает параметры URL при загрузке страницы
  */
 function handleUrlParams() {
+    console.log('handleUrlParams called');
     const params = getUrlParams();
+    console.log('URL params:', params);
     
     if (params.video) {
+        console.log(`Video ID from URL: ${params.video}, start time: ${params.t}`);
         // Небольшая задержка для убедиться, что DOM полностью загружен
         setTimeout(() => {
+            console.log('Calling playVideo with', params.video, params.t);
             playVideo(params.video, params.t);
         }, 500);
+    } else {
+        console.log('No video parameter in URL');
     }
 }
 
