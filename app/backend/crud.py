@@ -54,23 +54,27 @@ async def search_videos_by_transcription(query: str) -> list[dict[str, Any]]:
             id,
             title,
             filepath,
-            ts_headline('russian', transcription, plainto_tsquery('russian', :query),
+            ts_headline('russian', transcription, plainto_tsquery('russian', $1),
                         'StartSel=<b>,StopSel=</b>,MaxFragments=1,FragmentDelimiter=...,MaxWords=30,MinWords=15') AS snippet
         FROM videos
-        WHERE search_vector @@ plainto_tsquery('russian', :query)
-        ORDER BY ts_rank_cd(search_vector, plainto_tsquery('russian', :query)) DESC;
+        WHERE search_vector::tsvector @@ plainto_tsquery('russian', $1)
+        ORDER BY ts_rank_cd(search_vector::tsvector, plainto_tsquery('russian', $1)) DESC;
         """
-    connection = Tortoise.get_connection("default")
-    rows = await connection.execute_query_dict(search_query, {"query": query})
-    return [
-        {
-            "id": r["id"],
-            "title": r["title"],
-            "filepath": r["filepath"],
-            "snippet": r["snippet"],
-        }
-        for r in rows
-    ]
+    try:
+        connection = Tortoise.get_connection("default")
+        rows = await connection.execute_query_dict(search_query, [query])
+        return [
+            {
+                "id": r["id"],
+                "title": r["title"],
+                "filepath": r["filepath"],
+                "snippet": r["snippet"],
+            }
+            for r in rows
+        ]
+    except Exception as e:
+        logger.exception(f"Error during search for query '{query}': {e}")
+        raise
 
 
 async def clear_database() -> None:
