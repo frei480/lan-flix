@@ -1,6 +1,7 @@
 from uuid import uuid4
 
 from tortoise import fields, models
+# from tortoise.contrib.postgres.fields import TSVectorField
 
 
 class Playlist(models.Model):
@@ -20,9 +21,9 @@ class Video(models.Model):
     duration_seconds = fields.IntField(null=True)
     transcription = fields.TextField(null=True)
     # PostgreSQL-specific tsvector column for full‑text index
-    search_vector = fields.TextField(
-        null=True, db_column="search_vector", db_type="TSVECTOR"
-    )
+    # search_vector = TSVectorField(
+    #     source_fields=["transcription"], config="russian", null=True
+    # )
 
     playlist: fields.ForeignKeyNullableRelation["Playlist"] = fields.ForeignKeyField(
         "models.Playlist", related_name="videos", null=True
@@ -30,7 +31,7 @@ class Video(models.Model):
 
     class Meta:
         table = "videos"
-        indexes = [("search_vector",)]
+        # indexes = [("search_vector",)]
 
 
 class User(models.Model):
