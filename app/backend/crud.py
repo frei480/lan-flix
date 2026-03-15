@@ -158,4 +158,6 @@ async def ensure_superuser_exists(username: str, password: str) -> None:
         logger.info(f"Superuser '{username}' created successfully.")
     except Exception as e:
         # Если пользователь уже создан параллельным процессом, просто логируем
-        logger.warning(f"Could not create superuser '{username}': {e}. Assuming already exists.")
+        logger.warning(
+            f"Could not create superuser '{username}': {e}. Assuming already exists."
+        )

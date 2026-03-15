@@ -1,4 +1,5 @@
 from tortoise import fields, migrations
+from tortoise.contrib.postgres.fields import TSVectorField
 from tortoise.fields.base import OnDelete
 from tortoise.indexes import Index
 from tortoise.migrations import operations as ops
@@ -43,7 +44,10 @@ class Migration(migrations.Migration):
                 ),
                 ("duration_seconds", fields.IntField(null=True)),
                 ("transcription", fields.TextField(null=True, unique=False)),
-                ("search_vector", fields.TextField(null=True, unique=False)),
+                (
+                    "search_vector",
+                    TSVectorField(null=True, unique=False, db_type="TSVECTOR"),
+                ),
                 (
                     "playlist",
                     fields.ForeignKeyField(
@@ -60,9 +64,33 @@ class Migration(migrations.Migration):
             options={
                 "table": "videos",
                 "app": "models",
-                "indexes": [Index(fields=["search_vector"])],
+                "indexes": [Index(fields=["filepath", "id", "title"])],
                 "pk_attr": "id",
             },
             bases=["Model"],
+        ),
+        ops.RunSQL(
+            """
+                CREATE OR REPLACE FUNCTION update_video_search_vector() RETURNS TRIGGER AS $$
+                BEGIN
+                    NEW.search_vector = to_tsvector('russian', NEW.transcription);
+                    RETURN NEW;
+                END;
+                $$ LANGUAGE plpgsql;
+                """
+        ),
+        ops.RunSQL(
+            """
+                CREATE TRIGGER update_videos_search_vector_trigger
+                BEFORE INSERT OR UPDATE OF transcription ON videos
+                FOR EACH ROW EXECUTE FUNCTION update_video_search_vector();
+                """
+        ),
+        ops.RunSQL(
+            """
+                UPDATE videos
+                SET search_vector = to_tsvector('russian', transcription)
+                WHERE transcription IS NOT NULL;
+                """
         ),
     ]
