@@ -1,6 +1,7 @@
 import logging
 import mimetypes
 import os
+import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
@@ -15,11 +16,16 @@ from fastapi.openapi.docs import (
     get_swagger_ui_oauth2_redirect_html,
 )
 from fastapi.responses import StreamingResponse
+from tortoise.contrib.fastapi import register_tortoise
 
 from app.backend import crud
 from app.backend.auth import CurrentUserDep, create_access_token, verify_password
 from app.backend.config import cfg
-from app.backend.database import close_db, init_db
+from app.backend.database import (
+    TORTOISE_ORM,
+    apply_migrations,
+    ensure_database_exists,
+)
 from app.backend.schemas import (
     LoginRequest,
     PlaylistCreate,
@@ -32,7 +38,7 @@ from app.backend.schemas import (
     VideoUpdate,
 )
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, handlers=[logging.StreamHandler(sys.stdout)])
 logger = logging.getLogger(__name__)
 
 
@@ -48,18 +54,28 @@ def is_path_allowed(filepath: Path) -> bool:
         return False
 
 
-# tortoise handles connections internally; no session dependency is injected
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    print("[LIFESPAN] Starting up")
     logger.info("starting up")
-    await init_db()
+    print("[LIFESPAN] Checking database existence...")
+    logger.info("Checking database existence...")
+    await ensure_database_exists()
+    print("[LIFESPAN] Applying migrations...")
+    logger.info("Applying migrations...")
+    await apply_migrations()
+    print("[LIFESPAN] Database initialization complete.")
+    logger.info("Database initialization complete.")
+    print("[LIFESPAN] Ensuring superuser exists...")
+    logger.info("Ensuring superuser exists...")
+    await crud.ensure_superuser_exists(cfg.username, cfg.password)
+    print("[LIFESPAN] Superuser check complete.")
+    logger.info("Superuser check complete.")
     yield
-    await close_db()
+    print("[LIFESPAN] Shutting down")
 
 
-app = FastAPI(title="Url shortener", lifespan=lifespan, docs_url=None, redoc_url=None)
+app = FastAPI(title="Url shortener", docs_url=None, redoc_url=None, lifespan=lifespan)
 
 # Add CORS middleware
 app.add_middleware(
@@ -69,6 +85,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Register Tortoise ORM with FastAPI (adds middleware and ensures context)
+register_tortoise(app, config=TORTOISE_ORM)
 
 
 @app.get("/docs", include_in_schema=False)
@@ -378,13 +397,21 @@ async def read_playlist(playlist_id: int):
 @app.post("/admin/login", response_model=TokenResponse)
 async def login(request: LoginRequest):
     """Вход пользователя"""
+    logger.info(
+        f"Login attempt: username={request.username}, password_len={len(request.password)}"
+    )
     # Поиск пользователя в БД
     user = await crud.get_user_by_name(user_name=request.username)
-
-    if not user or not verify_password(request.password, user.hashed_password):
+    logger.info(f"User: {user}")
+    if not user:
+        logger.warning(f"User not found: {request.username}")
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+    if not verify_password(request.password, user.hashed_password):
+        logger.warning(f"Password mismatch for user {request.username}")
         raise HTTPException(status_code=401, detail="Invalid username or password")
 
     access_token = create_access_token(username=user.username)
+    logger.info(f"Access token: {access_token}")
     return {"access_token": access_token}
 
 
@@ -396,6 +423,8 @@ async def register(request: LoginRequest):
         raise HTTPException(status_code=400, detail="Username already exists")
     user = await crud.create_user(request.username, request.password)
     return user
+
+
 
 
 @app.get("/admin/videos/", response_model=list[VideoInDB])

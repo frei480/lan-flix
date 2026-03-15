@@ -1,3 +1,4 @@
+import logging
 from typing import Any
 
 from tortoise import Tortoise
@@ -5,6 +6,8 @@ from tortoise import Tortoise
 from app.backend.auth import hash_password
 from app.backend.models import Playlist, User, Video
 from app.backend.schemas import PlaylistCreate, PlaylistUpdate, VideoCreate, VideoUpdate
+
+logger = logging.getLogger(__name__)
 
 
 async def get_video(video_id: int) -> Video | None:
@@ -133,3 +136,22 @@ async def create_user(username: str, password: str) -> dict:
     hashed_password = hash_password(password)
     user = await User.create(username=username, hashed_password=hashed_password)
     return {"id": user.id, "username": user.username}
+
+
+async def ensure_superuser_exists(username: str, password: str) -> None:
+    """
+    Проверяет, существует ли пользователь с заданным именем.
+    Если нет — создаёт его с указанным паролем.
+    Обрабатывает возможные конфликты (например, дублирование из-за race condition).
+    """
+    existing = await get_user_by_name(username)
+    if existing:
+        logger.info(f"Superuser '{username}' already exists.")
+        return
+    logger.info(f"Creating superuser '{username}'...")
+    try:
+        await create_user(username, password)
+        logger.info(f"Superuser '{username}' created successfully.")
+    except Exception as e:
+        # Если пользователь уже создан параллельным процессом, просто логируем
+        logger.warning(f"Could not create superuser '{username}': {e}. Assuming already exists.")

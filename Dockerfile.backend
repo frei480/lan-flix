@@ -7,6 +7,8 @@ WORKDIR /app
 COPY pyproject.toml .
 COPY uv.lock .
 RUN pip install --no-cache-dir -e .
+# Копируем миграции
+COPY migrations/ /app/migrations/
 # Копируем остальное приложение
 COPY app/backend/ /app/app/backend
 ENV PATH="/app/.venv/bin:$PATH"
