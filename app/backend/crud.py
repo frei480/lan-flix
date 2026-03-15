@@ -19,7 +19,7 @@ async def get_video_by_filepath(filepath: str) -> Video | None:
 
 
 async def get_videos(skip: int = 0, limit: int = 100) -> list[Video]:
-    return await Video.all().offset(skip).limit(limit)
+    return await Video.all().offset(skip).limit(limit).order_by("id")
 
 
 async def get_videos_by_playlist(playlist_id: int) -> list[Video]:
