@@ -5,6 +5,25 @@
  */
 const BACKEND_URL = '/api';
 
+// Fallback для функции перевода, если i18n не загружен
+if (typeof t === 'undefined') {
+    window.t = function(key, options) {
+        // Простой fallback: возвращаем ключ или подставляем значения
+        if (options) {
+            return key.replace(/\{(\w+)\}/g, (match, p1) => options[p1] || match);
+        }
+        return key;
+    };
+}
+
+// Fallback для updateDynamicTranslations, если i18n не загружен
+if (typeof updateDynamicTranslations === 'undefined') {
+    window.updateDynamicTranslations = function() {
+        // Пустая функция, ничего не делает
+        console.log('updateDynamicTranslations fallback called');
+    };
+}
+
 function updateLanguageButtons() {
     const currentLang = localStorage.getItem('language') || 'ru';
     const buttons = document.querySelectorAll('.lang-btn');
@@ -114,8 +133,11 @@ function initInfiniteScroll() {
     const row = document.getElementById('video-row');
     const loaderAnchor = document.getElementById('row-loader');
 
+    // Если отсутствуют необходимые элементы (например, на админской странице), выходим
+    if (!row || !loaderAnchor) return;
+
     const options = {
-        root: row, 
+        root: row,
         rootMargin: '0px 300px 0px 0px', // Начинаем загрузку за 300px до того, как якорь покажется справа
         threshold: 0.1
     };
@@ -125,21 +147,23 @@ function initInfiniteScroll() {
             fetchVideos();
         }
     }, options);
-    if (loaderAnchor) observer.observe(loaderAnchor);
+    observer.observe(loaderAnchor);
 }
 
 /**
  * Показывает модальное окно сканирования видео.
  */
 function showScanModal() {
-    document.getElementById('scan-modal').classList.add('active');
+    const modal = document.getElementById('scan-modal');
+    if (modal) modal.classList.add('active');
 }
 
 /**
  * Закрывает модальное окно сканирования видео.
  */
 function closeScanModal() {
-    document.getElementById('scan-modal').classList.remove('active');
+    const modal = document.getElementById('scan-modal');
+    if (modal) modal.classList.remove('active');
 }
 
 /**
@@ -150,7 +174,9 @@ function closeScanModal() {
 async function scanAndLoadVideos() {
     closeScanModal();
     const container = document.getElementById('video-container');
-    container.innerHTML = '<div class="loader"></div>';
+    if (container) {
+        container.innerHTML = '<div class="loader"></div>';
+    }
     
     try {
         const response = await fetch(`${BACKEND_URL}/videos/scan-and-load/`, { method: 'POST' });
@@ -326,6 +352,9 @@ function renderItems(items, type = 'video', append = false) {
     const row = document.getElementById('video-row');
     const loaderAnchor = document.getElementById('row-loader');
 
+    // Если row отсутствует (например, на админской странице), выходим
+    if (!row) return;
+
     // 1. Если не режим добавления (append), очищаем всё, кроме якоря
     if (!append) {
         row.querySelectorAll('.video-card, .playlist-card, .no-videos').forEach(el => el.remove());
@@ -341,10 +370,10 @@ function renderItems(items, type = 'video', append = false) {
     }
     const fragment = document.createDocumentFragment();
     // 3. Генерируем HTML для каждого элемента
-    items.forEach(item => {        
+    items.forEach(item => {
         if (type === 'video') {
             const card = createVideoCard(item);
-            fragment.appendChild(card);        
+            fragment.appendChild(card);
         } else if (type === 'playlist') {
             const card = document.createElement('div');
             card.className = 'playlist-card';
@@ -357,11 +386,15 @@ function renderItems(items, type = 'video', append = false) {
                 </div>`;
             card.querySelector('.playlist-card-title').textContent = item.name;
             card.querySelector('.playlist-card-count').textContent = `${item.video_count || 0} videos`;
-            fragment.appendChild(card);        
+            fragment.appendChild(card);
         }
     });
-    // Вставляем строго перед якорем
-    row.insertBefore(fragment, loaderAnchor);
+    // Вставляем строго перед якорем, если якорь существует, иначе в конец row
+    if (loaderAnchor) {
+        row.insertBefore(fragment, loaderAnchor);
+    } else {
+        row.appendChild(fragment);
+    }
 }
 
 
@@ -653,24 +686,28 @@ function handleUrlParams() {
     }
 }
 
-document.getElementById('hero-search-input').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-        heroSearch();
-    }
-});
+const heroSearchInput = document.getElementById('hero-search-input');
+if (heroSearchInput) {
+    heroSearchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            heroSearch();
+        }
+    });
 
-document.getElementById('hero-search-input').addEventListener('blur', function() {
-    setTimeout(() => {
-        document.getElementById('hero-results').classList.remove('active');
-    }, 200);
-});
+    heroSearchInput.addEventListener('blur', function() {
+        setTimeout(() => {
+            const heroResults = document.getElementById('hero-results');
+            if (heroResults) heroResults.classList.remove('active');
+        }, 200);
+    });
 
-document.getElementById('hero-search-input').addEventListener('focus', function() {
-    const results = document.getElementById('hero-results');
-    if (results.children.length > 0) {
-        results.classList.add('active');
-    }
-});
+    heroSearchInput.addEventListener('focus', function() {
+        const results = document.getElementById('hero-results');
+        if (results && results.children.length > 0) {
+            results.classList.add('active');
+        }
+    });
+}
 
 /**
  * Выполняет поиск видео по запросу и отображает результаты.
@@ -802,11 +839,14 @@ function updateTabs(activeTab, clickedElement) {
     }
 }
 
-document.getElementById('video-modal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        closeModal();
-    }
-});
+const videoModal = document.getElementById('video-modal');
+if (videoModal) {
+    videoModal.addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeModal();
+        }
+    });
+}
 
 document.addEventListener('DOMContentLoaded', () => {
 
