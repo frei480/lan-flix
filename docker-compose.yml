@@ -37,6 +37,7 @@ services:
       TRANSCRIPTIONS_DIR: /app/transcriptions # Путь внутри контейнера для транскрипций
       username: ${username}
       password: ${password}
+      SECRET_KEY: ${SECRET_KEY}
     volumes:
       - ${video_dir}:/app/videos # Монтируем локальную папку videos в контейнер
     depends_on:
