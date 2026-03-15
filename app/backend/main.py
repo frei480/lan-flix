@@ -56,21 +56,21 @@ def is_path_allowed(filepath: Path) -> bool:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    print("[LIFESPAN] Starting up")
-    logger.info("starting up")
-    print("[LIFESPAN] Checking database existence...")
-    logger.info("Checking database existence...")
+    """
+    Контекстный менеджер жизненного цикла приложения FastAPI.
+
+    Выполняет инициализацию базы данных, применяет миграции и создаёт суперпользователя
+    при запуске приложения. При завершении выводит сообщение о завершении работы.
+
+    Args:
+        app (FastAPI): Экземпляр приложения FastAPI.
+
+    Yields:
+        None: Управление возвращается приложению на время работы.
+    """
     await ensure_database_exists()
-    print("[LIFESPAN] Applying migrations...")
-    logger.info("Applying migrations...")
     await apply_migrations()
-    print("[LIFESPAN] Database initialization complete.")
-    logger.info("Database initialization complete.")
-    print("[LIFESPAN] Ensuring superuser exists...")
-    logger.info("Ensuring superuser exists...")
     await crud.ensure_superuser_exists(cfg.username, cfg.password)
-    print("[LIFESPAN] Superuser check complete.")
-    logger.info("Superuser check complete.")
     yield
     print("[LIFESPAN] Shutting down")
 
