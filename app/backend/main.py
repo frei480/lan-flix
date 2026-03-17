@@ -511,8 +511,7 @@ async def read_playlists(skip: int = 0, limit: int = 100):
     Returns:
         list[PlaylistInDB]: Список объектов плейлистов.
     """
-    playlists = await crud.get_playlists(skip=skip, limit=limit)
-    return [PlaylistInDB(**playlist) for playlist in playlists]
+    return await crud.get_playlists(skip=skip, limit=limit)
 
 
 @app.get("/playlists/{playlist_id}", response_model=PlaylistWithVideos)

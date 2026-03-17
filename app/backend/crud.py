@@ -2,10 +2,17 @@ import logging
 from typing import Any
 
 from tortoise import Tortoise
+from tortoise.functions import Count
 
 from app.backend.auth import hash_password
 from app.backend.models import Playlist, User, Video
-from app.backend.schemas import PlaylistCreate, PlaylistUpdate, VideoCreate, VideoUpdate
+from app.backend.schemas import (
+    PlaylistCreate,
+    PlaylistInDB,
+    PlaylistUpdate,
+    VideoCreate,
+    VideoUpdate,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -93,21 +100,11 @@ async def get_playlist_by_folder(folder_path: str) -> Playlist | None:
     return await Playlist.filter(folder_path=folder_path).first()
 
 
-async def get_playlists(skip: int = 0, limit: int = 100) -> list[dict]:
-    playlists = await Playlist.all().offset(skip).limit(limit)
-    playlist_data: list[dict] = []
-    for playlist in playlists:
-        videos = await Video.filter(playlist=playlist.id).all()
-        playlist_data.append(
-            {
-                "id": playlist.id,
-                "name": playlist.name,
-                "folder_path": playlist.folder_path,
-                "description": playlist.description,
-                "video_count": len(videos),
-            }
-        )
-    return playlist_data
+async def get_playlists(skip: int = 0, limit: int = 100) -> list[PlaylistInDB]:
+    playlists = (
+        await Playlist.annotate(video_count=Count("videos")).offset(skip).limit(limit)
+    )
+    return [PlaylistInDB.model_validate(p) for p in playlists]
 
 
 async def create_playlist(playlist: PlaylistCreate) -> Playlist:

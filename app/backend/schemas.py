@@ -1,6 +1,6 @@
 # from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class VideoBase(BaseModel):
@@ -60,7 +60,7 @@ class PlaylistInDB(PlaylistBase):
 
 
 class PlaylistWithVideos(PlaylistInDB):
-    videos: list[VideoInDB] = []
+    videos: list[VideoInDB] = Field(default_factory=list)
 
 
 class LoginRequest(BaseModel):
