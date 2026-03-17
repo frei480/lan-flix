@@ -97,7 +97,7 @@ async def get_playlists(skip: int = 0, limit: int = 100) -> list[dict]:
     playlists = await Playlist.all().offset(skip).limit(limit)
     playlist_data: list[dict] = []
     for playlist in playlists:
-        videos = await Video.filter(filepath__startswith=playlist.folder_path).all()
+        videos = await Video.filter(playlist=playlist.id).all()
         playlist_data.append(
             {
                 "id": playlist.id,
