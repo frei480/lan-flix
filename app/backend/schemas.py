@@ -1,4 +1,4 @@
-from typing import Optional
+# from typing import Optional
 
 from pydantic import BaseModel
 
@@ -6,9 +6,9 @@ from pydantic import BaseModel
 class VideoBase(BaseModel):
     title: str
     filepath: str
-    duration_seconds: Optional[int] = None
-    transcription: Optional[str] = None
-    playlist_id: Optional[int] = None
+    duration_seconds: int | None = None
+    transcription: str | None = None
+    playlist_id: int | None = None
 
 
 class VideoCreate(VideoBase):
@@ -16,11 +16,11 @@ class VideoCreate(VideoBase):
 
 
 class VideoUpdate(BaseModel):
-    title: Optional[str] = None
-    filepath: Optional[str] = None
-    duration_seconds: Optional[int] = None
-    transcription: Optional[str] = None
-    playlist_id: Optional[int] = None
+    title: str | None = None
+    filepath: str | None = None
+    duration_seconds: int | None = None
+    transcription: str | None = None
+    playlist_id: int | None = None
 
 
 class VideoInDB(VideoBase):
@@ -34,13 +34,13 @@ class SearchResult(BaseModel):
     id: int
     title: str
     filepath: str
-    snippet: Optional[str] = None  # Кусочек текста с совпадением
+    snippet: str | None = None  # Кусочек текста с совпадением
 
 
 class PlaylistBase(BaseModel):
     name: str
     folder_path: str
-    description: Optional[str] = None
+    description: str | None = None
 
 
 class PlaylistCreate(PlaylistBase):
