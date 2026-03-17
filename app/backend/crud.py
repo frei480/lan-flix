@@ -1,4 +1,5 @@
 import logging
+import re
 from typing import Any
 
 from tortoise import Tortoise
@@ -17,6 +18,11 @@ from app.backend.schemas import (
 logger = logging.getLogger(__name__)
 
 
+def natural_sort_key(s: str):
+    """Сортировка строк по натуральному порядку."""
+    return [int(t) if t.isdigit() else t for t in re.split(r"(\d+)", s)]
+
+
 async def get_video(video_id: int) -> Video | None:
     return await Video.filter(id=video_id).first()
 
@@ -30,7 +36,9 @@ async def get_videos(skip: int = 0, limit: int = 100) -> list[Video]:
 
 
 async def get_videos_by_playlist(playlist_id: int) -> list[Video]:
-    return await Video.filter(playlist_id=playlist_id).all()
+    videos = await Video.filter(playlist_id=playlist_id).all()
+    videos.sort(key=lambda v: natural_sort_key(v.title))
+    return videos
 
 
 async def create_video(video: VideoCreate) -> Video:
@@ -104,7 +112,9 @@ async def get_playlists(skip: int = 0, limit: int = 100) -> list[PlaylistInDB]:
     playlists = (
         await Playlist.annotate(video_count=Count("videos")).offset(skip).limit(limit)
     )
-    return [PlaylistInDB.model_validate(p) for p in playlists]
+    playlists_in_db = [PlaylistInDB.model_validate(p) for p in playlists]
+    playlists_in_db.sort(key=lambda p: natural_sort_key(p.name))
+    return playlists_in_db
 
 
 async def create_playlist(playlist: PlaylistCreate) -> Playlist:
