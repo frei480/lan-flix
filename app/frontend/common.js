@@ -486,7 +486,18 @@ async function playVideo(videoId, startTime = 0) {
     console.log('Modal opened');
     
     if (video.transcription) {
-        srt.innerText = video.transcription;
+        const fragments = document.createDocumentFragment();
+        const chapters = video.transcription.split('\n\n').forEach(
+            chapter =>{
+                const timestamp = extractTimestamp(chapter);
+                const paragraph = document.createElement('p');
+                paragraph.className = 'search-result-card';
+                paragraph.addEventListener('click', () => player.currentTime=timestamp || 0 );                
+                paragraph.innerHTML = chapter;
+                fragments.appendChild(paragraph);
+            }
+        );
+        srt.appendChild(fragments);
     }
 }
 
