@@ -14,3 +14,18 @@ down:
 
 build:
 	docker compose up -d --build
+
+.PHONY: wheels
+wheels:
+	uv pip compile pyproject.toml -o requirements.txt
+	pip download -d wheels setuptools wheel pip --python-version 3.14 --only-binary=:all:
+	pip download \
+	-d wheels \
+	-r requirements.txt \
+	-d wheels \
+	--python-version 3.14 \
+	--only-binary=:all:
+		
+.PHONY: clean-wheels
+clean-wheels:
+	Remove-Item -Recurse -Force wheels

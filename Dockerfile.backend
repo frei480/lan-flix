@@ -2,10 +2,15 @@
 FROM python:3.14-slim
 
 WORKDIR /app
+COPY wheels/ /wheels/
 
 # Копируем pyproject.toml и устанавливаем зависимости
 COPY pyproject.toml .
 COPY uv.lock .
+ENV PIP_NO_INDEX=true
+ENV PIP_FIND_LINKS=/wheels
+
+RUN pip install --no-cache-dir wheel setuptools pip
 RUN pip install --no-cache-dir -e .
 # Копируем миграции
 COPY migrations/ /app/migrations/
