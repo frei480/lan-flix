@@ -831,8 +831,8 @@ function updateTabs(activeTab, clickedElement) {
     } else {
         tabs.forEach(tab => {
             const text = tab.textContent.toLowerCase();
-            if ((activeTab === 'all' && text.includes('all videos')) ||
-                (activeTab === 'playlists' && text.includes('my lists'))) {
+            if ((activeTab === 'all' && text.includes(t('tabs.allVideos').toLowerCase())) ||
+                (activeTab === 'playlists' && text.includes(t('tabs.myLists').toLowerCase()))) {
                 tab.classList.add('active');
             }
         });
