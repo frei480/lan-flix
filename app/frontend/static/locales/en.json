@@ -19,7 +19,8 @@
   "buttons": {
     "backToBrowse": "Back to Browse",
     "share": "Share",
-    "shareWithTimecode": "Share with timecode"
+    "shareWithTimecode": "Share with timecode",
+    "shareSuccess": "Copied!"
   },
   "section": {
     "videosPlaylists": "Videos & Playlists"

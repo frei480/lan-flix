@@ -19,7 +19,8 @@
   "buttons": {
     "backToBrowse": "Назад к просмотру",
     "share": "Поделиться",
-    "shareWithTimecode": "Поделиться с тайм-кодом"
+    "shareWithTimecode": "Поделиться с тайм-кодом",
+    "shareSuccess": "Скопировано!"
   },
   "section": {
     "videosPlaylists": "Видео и плейлисты"

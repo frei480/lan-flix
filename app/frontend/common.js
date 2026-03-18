@@ -584,7 +584,7 @@ async function copyShareLink() {
         if (!shareButton) return;
         
         if (success) {
-            shareButton.innerHTML = `<span class="share-icon">✓</span><span class="share-text">Copied!</span>`;
+            shareButton.innerHTML = `<span class="share-icon">✓</span><span class="share-text">${t('buttons.shareSuccess')}</span>`;
             shareButton.classList.add('copied');
             setTimeout(() => {
                 shareButton.classList.remove('copied');
