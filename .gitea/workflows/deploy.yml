@@ -1,0 +1,56 @@
+name: Deploy with Make Up
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker
+        uses: docker/setup-docker-action@v3
+        with:
+          docker-version: '24.0'
+
+      - name: Set up Docker Compose
+        uses: docker/compose-action@v3
+        with:
+          version: 'v2.24.0'
+
+      - name: Create .env file from example
+        run: |
+          if [ -f .env.example ]; then
+            cp .env.example .env
+          else
+            echo ".env.example not found, creating empty .env"
+            touch .env
+          fi
+
+      - name: Set environment variables
+        run: |
+          echo "DB_USER=${{ secrets.DB_USER }}" >> .env
+          echo "DB_PASS=${{ secrets.DB_PASS }}" >> .env
+          echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
+          echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
+          echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
+          echo "username=${{ secrets.USERNAME }}" >> .env
+          echo "password=${{ secrets.PASSWORD }}" >> .env
+          echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env
+          echo "pg_data_dir=${{ secrets.PG_DATA_DIR }}" >> .env
+          echo "video_dir=${{ secrets.VIDEO_DIR }}" >> .env
+          echo "transcriptions_dir=${{ secrets.TRANSCRIPTIONS_DIR }}" >> .env
+          echo "VIDEOS_DIR=${{ secrets.VIDEOS_DIR }}" >> .env
+          echo "TRANSCRIPTIONS_DIR=${{ secrets.TRANSCRIPTIONS_DIR }}" >> .env
+          echo "LOG_LEVEL=${{ secrets.LOG_LEVEL }}" >> .env
+
+      - name: Run make up
+        run: make up
+
+      - name: Verify containers are running
+        run: docker compose ps
