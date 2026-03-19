@@ -12,6 +12,7 @@ ENV PIP_FIND_LINKS=/wheels
 
 RUN pip install --no-cache-dir wheel setuptools pip
 RUN pip install --no-cache-dir -e .
+RUN rm -rf wheels
 # Копируем миграции
 COPY migrations/ /app/migrations/
 # Копируем остальное приложение
