@@ -484,13 +484,23 @@ async function playVideo(videoId, startTime = 0) {
     
     modal.classList.add('active');
     console.log('Modal opened');
-    
+    srt.innerHTML='';
     if (video.transcription) {
         const fragments = document.createDocumentFragment();
-        const chapters = video.transcription.split('\n\n').forEach(
-            chapter =>{
-                const timestamp = extractTimestamp(chapter);
+        // Регулярное выражение:
+        // (?:^|\n)  - начало строки ИЛИ перенос строки (чтобы поймать первый таймкод или последующие)
+        // (?=...)   - позитивный просмотр вперед (не потребляет символы, просто проверяет условие)
+        // \d{1,2}   - 1 или 2 цифры (часы или минуты)
+        // :         - двоеточие
+        // \d{2}     - 2 цифры (минуты или секунды)
+        // (?::\d{2})? - опциональная группа :секунды (для формата ЧЧ:ММ:СС)
+        // \s+       - один или более пробелов после времени
+        const regex = /(?:^|\n)(?=\d{1,2}:\d{2}(?::\d{2})?\s+)/;
+        video.transcription.split(regex).forEach(
+            chapter => {
+                const timestamp = extractTimestamp(chapter);                
                 const paragraph = document.createElement('p');
+                paragraph.style.whiteSpace = 'pre-line'; // ← Ключевая строка!
                 paragraph.className = 'search-result-card';
                 paragraph.addEventListener('click', () => player.currentTime=timestamp || 0 );                
                 paragraph.innerHTML = chapter;
@@ -879,15 +889,17 @@ document.addEventListener('DOMContentLoaded', () => {
 function extractTimestamp(text) {
     if (!text) return null;
 
-    // Ищем первое вхождение формата 00:00
-    const match = text.match(/\b(\d{2}):(\d{2})\b/);
-
+    // Ищем первое вхождение формата 00:00 или 00:00:00    
+    let match = text.match(/\b(\d{2}):(\d{2}):?(\d{2})?\b/);
     if (!match) return null;
-
-    const minutes = parseInt(match[1], 10);
-    const seconds = parseInt(match[2], 10);
-
-    return minutes * 60 + seconds;
+        
+    const [, a,b,c] = match.map(Number);
+    if (c) {
+       return a * 3600 + b * 60 + c;
+    } else {
+       return a * 60 + b;
+    }
+    
 }
 
 /**
