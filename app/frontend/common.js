@@ -20,7 +20,6 @@ if (typeof t === 'undefined') {
 if (typeof updateDynamicTranslations === 'undefined') {
     window.updateDynamicTranslations = function() {
         // Пустая функция, ничего не делает
-        console.log('updateDynamicTranslations fallback called');
     };
 }
 
@@ -143,7 +142,6 @@ function initInfiniteScroll() {
     };
     const observer = new IntersectionObserver((entries) => {
         if (entries[0].isIntersecting && !isLoading && hasMore && currentView=='all')  {
-            console.log(t('console.fetchingMore'));
             fetchVideos();
         }
     }, options);
@@ -405,12 +403,10 @@ function renderItems(items, type = 'video', append = false) {
  * @param {number} [startTime=0] - Время начала воспроизведения в секундах.
  */
 async function playVideo(videoId, startTime = 0) {
-    console.log('playVideo called with videoId:', videoId, 'startTime:', startTime);
     const modal = document.getElementById('video-modal');
     const player = document.getElementById('video-player');
     const title = document.getElementById('modal-title');
     const srt = document.getElementById('video-subtitles');
-    console.log('Modal:', modal, 'Player:', player);
     if (!modal || !player) {
         console.error('Modal or player element not found');
         return;
@@ -418,15 +414,12 @@ async function playVideo(videoId, startTime = 0) {
     const existingTrack = player.querySelector('track');
     if(existingTrack) existingTrack.remove();
     
-    console.log('Fetching video metadata...');
     const video = await fetchVideo(videoId); //allVideos.find(v => v.id === videoId);
     if (!video) {
         console.error('Video not found or fetch failed');
         return;
     }
-    console.log('Video fetched:', video.title);
     const trackpath = video.filepath.replace('/app/videos', '/static/transcriptions').replace(/\.[^/.]+$/, '.vtt');
-    console.log('Track path:', trackpath);
     const response = await fetch(trackpath);
     if (response.ok) {
         const track = document.createElement('track', {method: 'HEAD'});
@@ -435,7 +428,6 @@ async function playVideo(videoId, startTime = 0) {
         track.srclang = 'ru';
         track.src = trackpath;
         player.appendChild(track);
-        console.log('Subtitles track added');
     } else {
         console.log('No subtitles found');
     }
@@ -451,23 +443,18 @@ async function playVideo(videoId, startTime = 0) {
     setupShareButton();
 
     const streamUrl = `${BACKEND_URL}/videos/${videoId}/stream`;
-    console.log('Setting player src to:', streamUrl);
     player.src = streamUrl;
 
     player.addEventListener('loadedmetadata', function onLoad() {
-        console.log('Player loadedmetadata, duration:', player.duration);
         player.removeEventListener('loadedmetadata', onLoad);
 
         if (startTime && !isNaN(startTime)) {
-            console.log('Setting currentTime to', startTime);
             player.currentTime = startTime;
         }
 
-        console.log('Attempting to play...');
         const playPromise = player.play();
         if (playPromise !== undefined) {
             playPromise.then(() => {
-                console.log('Playback started successfully');
             }).catch(error => {
                 console.error('Playback failed:', error);
                 // Autoplay may be blocked, try muted autoplay
@@ -483,11 +470,10 @@ async function playVideo(videoId, startTime = 0) {
     });
     
     modal.classList.add('active');
-    console.log('Modal opened');
     srt.innerHTML='';
     if (video.transcription) {
         const fragments = document.createDocumentFragment();
-        // Регулярное выражение:
+        /* Регулярное выражение:
         // (?:^|\n)  - начало строки ИЛИ перенос строки (чтобы поймать первый таймкод или последующие)
         // (?=...)   - позитивный просмотр вперед (не потребляет символы, просто проверяет условие)
         // \d{1,2}   - 1 или 2 цифры (часы или минуты)
@@ -495,12 +481,13 @@ async function playVideo(videoId, startTime = 0) {
         // \d{2}     - 2 цифры (минуты или секунды)
         // (?::\d{2})? - опциональная группа :секунды (для формата ЧЧ:ММ:СС)
         // \s+       - один или более пробелов после времени
+        */
         const regex = /(?:^|\n)(?=\d{1,2}:\d{2}(?::\d{2})?\s+)/;
         video.transcription.split(regex).forEach(
             chapter => {
                 const timestamp = extractTimestamp(chapter);                
                 const paragraph = document.createElement('p');
-                paragraph.style.whiteSpace = 'pre-line'; // ← Ключевая строка!
+                paragraph.style.whiteSpace = 'pre-line';
                 paragraph.className = 'search-result-card';
                 paragraph.addEventListener('click', () => player.currentTime=timestamp || 0 );                
                 paragraph.innerHTML = chapter;
@@ -639,7 +626,6 @@ async function copyShareLink() {
             method = 'execCommand';
         }
         
-        console.log(`Copy ${copied ? 'succeeded' : 'failed'} via ${method}`);
         showCopyFeedback(copied);
     } catch (error) {
         console.error('Failed to copy to clipboard:', error);
@@ -691,15 +677,10 @@ function getUrlParams() {
  * Обрабатывает параметры URL при загрузке страницы
  */
 function handleUrlParams() {
-    console.log('handleUrlParams called');
     const params = getUrlParams();
-    console.log('URL params:', params);
     
     if (params.video) {
-        console.log(`Video ID from URL: ${params.video}, start time: ${params.t}`);
-        // Небольшая задержка для убедиться, что DOM полностью загружен
         setTimeout(() => {
-            console.log('Calling playVideo with', params.video, params.t);
             playVideo(params.video, params.t);
         }, 500);
     } else {
@@ -890,7 +871,7 @@ function extractTimestamp(text) {
     if (!text) return null;
 
     // Ищем первое вхождение формата 00:00 или 00:00:00    
-    let match = text.match(/\b(\d{2}):(\d{2}):?(\d{2})?\b/);
+    let match = text.match(/\b(\d{1,2}):(\d{2}):?(\d{2})?\b/);
     if (!match) return null;
         
     const [, a,b,c] = match.map(Number);
