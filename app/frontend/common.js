@@ -482,6 +482,15 @@ async function playVideo(videoId, startTime = 0) {
     if(existingTrack) existingTrack.remove();
     
     const video = await fetchVideo(videoId); //allVideos.find(v => v.id === videoId);
+    
+    if (video) {
+        console.log('video_id: ${video.id}, playlist_id: ${video.playlist_id}');
+        const playlist = video.playlist_id;
+        if (playlist && playlist !== currentPlaylistId) {
+            setTimeout(() => showPlaylistVideos(video.playlist_id), 0);
+        }
+        }
+            
     if (!video) {
         console.error('Video not found or fetch failed');
         return;
