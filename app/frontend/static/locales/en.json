@@ -19,8 +19,10 @@
   "buttons": {
     "backToBrowse": "Back to Browse",
     "share": "Share",
-    "shareWithTimecode": "Share with timecode",
-    "shareSuccess": "Copied!"
+    "shareWithTimestamp": "Share with current timestamp",
+    "shareSuccess": "Copied!",
+    "playlistLinkCopied": "Playlist link copied!",
+    "copyPlaylistLink": "Copy playlist link"
   },
   "section": {
     "videosPlaylists": "Videos & Playlists"

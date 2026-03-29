@@ -59,6 +59,12 @@ let allPlaylists = [];
 let currentVideoId = null;
 
 /**
+ * Текущий открытый плейлист ID.
+ * @type {number|null}
+ */
+let currentPlaylistId = null;
+
+/**
  * Текущий вид контента: 'all', 'playlists', 'playlist_detail', 'filter'.
  * @type {string}
  */
@@ -110,6 +116,7 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('DOMContentLoaded start');
     initInfiniteScroll();
     updateLanguageButtons();
+    initClipboardCopy(); // Инициализация кнопки clipboard-copy
     const params = getUrlParams();
     console.log('URL params:', params);
     const videoRow = document.getElementById('video-row');
@@ -295,7 +302,7 @@ function showPlaylists() {
 
     updateTabs('playlists');
     document.getElementById('back-btn').style.display = 'none';
-    document.getElementById('playlist-name').innerHTML = ``;
+    document.getElementById('playlist-name').innerHTML = '';
 
     renderItems(allPlaylists, 'playlist', false);
 
@@ -312,16 +319,46 @@ async function showPlaylistVideos(playlistId) {
         const playlist = await response.json();
         
         currentView = 'playlist_detail';
+        currentPlaylistId = playlistId; // Сохраняем ID текущего плейлиста
 
         toggleContentSection();
-        updateTabs('playlists');           
+        updateTabs('playlists');
         document.getElementById('back-btn').style.display = 'flex';
-        document.getElementById('playlist-name').innerHTML = `<h2>${playlist.name}</h2>`;
+        
+        renderPlaylistName(playlist);
+        
+        // Обновляем значение clipboard-copy
+        updateClipboardValue();
         
         // ВЫЗОВ: тип 'video', append = false
         renderItems(playlist.videos, 'video', false);
     } catch (error) {
         console.error('Error:', error);
+    }
+}
+
+/**
+ * Отрисовывает название плейлиста и кнопку копирования, используя шаблон из HTML.
+ * @param {Object} playlist - Объект плейлиста с полем name.
+ */
+function renderPlaylistName(playlist) {
+    const template = document.getElementById('playlist-name-template');
+    
+    const clone = template.content.cloneNode(true);
+    const container = document.getElementById('playlist-name');
+    container.innerHTML = '';
+    container.appendChild(clone);
+    
+    // Заполняем данные
+    const titleElement = container.querySelector('.playlist-title');
+    const buttonElement = container.querySelector('.playlist-copy-button');
+    if (titleElement) {
+        titleElement.textContent = playlist.name;
+    }
+    if (buttonElement) {
+        const label = t('buttons.copyPlaylistLink');
+        buttonElement.setAttribute('aria-label', label);
+        buttonElement.setAttribute('title', label);
     }
 }
 
@@ -337,8 +374,10 @@ function toggleContentSection() {
  */
 function goBack() {
     currentView = 'playlists';
-    document.getElementById('playlist-name').innerHTML = ` `;
+    currentPlaylistId = null; // Сбрасываем ID текущего плейлиста
+    document.getElementById('playlist-name').innerHTML = '';
     document.getElementById('back-btn').style.display = 'none';
+    updateClipboardValue(); // Обновляем значение clipboard-copy
     showPlaylists();
 }
 
@@ -469,6 +508,9 @@ async function playVideo(videoId, startTime = 0) {
     
     // Обновляем кнопку поделиться каждый раз когда видео загружается
     setupShareButton();
+    
+    // Обновляем значение clipboard-copy
+    updateClipboardValue();
 
     const streamUrl = `${BACKEND_URL}/videos/${videoId}/stream`;
     player.src = streamUrl;
@@ -575,16 +617,38 @@ function generateShareLink() {
 }
 
 /**
- * Копирует ссылку с временной меткой в буфер обмена и показывает обратную связь
+ * Генерирует ссылку на текущий открытый плейлист
+ * @returns {string} URL плейлиста
  */
-async function copyShareLink() {
-    const shareUrl = generateShareLink();
+function generatePlaylistLink() {
+    if (!currentPlaylistId) return '';
     
-    if (!shareUrl) {
-        alert('Please play a video first');
+    const baseUrl = window.location.origin + window.location.pathname;
+    const playlistUrl = `${baseUrl}?playlist=${currentPlaylistId}`;
+    return playlistUrl;
+}
+
+/**
+ * Копирует ссылку на текущий плейлист в буфер обмена
+ */
+async function copyPlaylistLink() {
+    const playlistUrl = generatePlaylistLink();
+    
+    if (!playlistUrl) {
+        alert('No playlist is currently open');
         return;
     }
     
+    const button = document.querySelector('.playlist-copy-button');
+    await copyLink(playlistUrl, button, t('buttons.playlistLinkCopied'));
+}
+
+/**
+ * Копирует текст в буфер обмена с использованием Clipboard API или fallback
+ * @param {string} text - Текст для копирования
+ * @returns {Promise<boolean>} Успешность копирования
+ */
+async function copyToClipboard(text) {
     // Функция для копирования через современный Clipboard API
     async function copyWithClipboardAPI(text) {
         if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -614,51 +678,131 @@ async function copyShareLink() {
         }
     }
     
-    // Функция для показа обратной связи
-    function showCopyFeedback(success) {
-        const shareButton = document.querySelector('.share-button');
-        if (!shareButton) return;
-        
-        if (success) {
-            shareButton.innerHTML = `<span class="share-icon">✓</span><span class="share-text">${t('buttons.shareSuccess')}</span>`;
-            shareButton.classList.add('copied');
-            setTimeout(() => {
-                shareButton.classList.remove('copied');
-                updateShareButtonTime();
-            }, 2000);
-        } else {
-            // Если не удалось скопировать, показываем ссылку для ручного копирования
-            alert(`Copy failed. Please manually copy the link:\n\n${shareUrl}`);
-        }
-    }
-    
     try {
-        let copied = false;
-        let method = 'none';
-        // Пробуем современный API
         if (navigator.clipboard) {
             try {
-                await navigator.clipboard.writeText(shareUrl);
-                copied = true;
-                method = 'clipboard API';
+                await navigator.clipboard.writeText(text);
+                return true;
             } catch (e) {
                 console.warn('Clipboard API error, falling back to execCommand:', e);
-                // Если modern API выдал ошибку, пробуем fallback
-                copied = copyWithExecCommand(shareUrl);
-                method = 'execCommand (fallback)';
+                return copyWithExecCommand(text);
             }
         } else {
             console.warn('Clipboard API not available, using execCommand');
-            // Если Clipboard API недоступен, используем execCommand
-            copied = copyWithExecCommand(shareUrl);
-            method = 'execCommand';
+            return copyWithExecCommand(text);
         }
-        
-        showCopyFeedback(copied);
     } catch (error) {
         console.error('Failed to copy to clipboard:', error);
-        showCopyFeedback(false);
+        return false;
     }
+}
+
+/**
+ * Показывает обратную связь об успешном копировании на указанном элементе
+ * @param {boolean} success - Успешность копирования
+ * @param {HTMLElement} feedbackElement - Элемент для отображения обратной связи (опционально)
+ * @param {string} successText - Текст при успехе (опционально)
+ */
+function showCopyFeedback(success, feedbackElement = null, successText = null) {
+    if (success) {
+        if (feedbackElement) {
+            const originalHTML = feedbackElement.innerHTML;
+            feedbackElement.innerHTML = `<span class="share-icon">✓</span><span class="share-text">${successText || t('buttons.shareSuccess')}</span>`;
+            feedbackElement.classList.add('copied');
+            setTimeout(() => {
+                feedbackElement.classList.remove('copied');
+                feedbackElement.innerHTML = originalHTML;
+            }, 2000);
+        } else {
+            // Если элемент не передан, просто показываем alert
+            //alert('Ссылка скопирована!');
+        }
+    } else {
+        alert('Не удалось скопировать ссылку. Пожалуйста, скопируйте вручную.');
+    }
+}
+
+/**
+ * Копирует указанный URL в буфер обмена и показывает обратную связь.
+ * @param {string} url - URL для копирования.
+ * @param {HTMLElement} feedbackElement - Элемент для обратной связи (опционально).
+ * @param {string} successText - Текст успеха (опционально).
+ * @returns {Promise<boolean>} Успешность операции.
+ */
+async function copyLink(url, feedbackElement = null, successText = null) {
+    if (!url) {
+        alert('No link to copy');
+        return false;
+    }
+    
+    const success = await copyToClipboard(url);
+    showCopyFeedback(success, feedbackElement, successText);
+    return success;
+}
+
+/**
+ * Обновляет значение атрибута 'value' элемента <clipboard-copy> в зависимости от текущего контекста
+ */
+function updateClipboardValue() {
+    const clipboardButton = document.querySelector('clipboard-copy');
+    if (!clipboardButton) return;
+    
+    if (currentPlaylistId) {
+        clipboardButton.setAttribute('value', generatePlaylistLink());
+    } else if (currentVideoId) {
+        clipboardButton.setAttribute('value', generateShareLink());
+    } else {
+        clipboardButton.setAttribute('value', '');
+    }
+}
+
+/**
+ * Инициализирует обработчик клика для элемента <clipboard-copy>
+ */
+function initClipboardCopy() {
+    const clipboardButton = document.querySelector('clipboard-copy');
+    if (!clipboardButton) return;
+    
+    // Удаляем предыдущий обработчик, чтобы избежать дублирования
+    clipboardButton.removeEventListener('click', handleClipboardCopyClick);
+    clipboardButton.addEventListener('click', handleClipboardCopyClick);
+}
+
+/**
+ * Обработчик клика на элемент <clipboard-copy>
+ * @param {Event} event - Событие клика
+ */
+function handleClipboardCopyClick(event) {
+    event.preventDefault();
+    copyShareLink(); // Используем общую функцию копирования
+}
+
+/**
+ * Копирует ссылку (видео с временной меткой или плейлист) в буфер обмена и показывает обратную связь
+ */
+async function copyShareLink() {
+    let url = '';
+    let feedbackElement = null;
+    let successText = null;
+    
+    // Определяем контекст: плейлист или видео
+    // Приоритет у видео, если оно воспроизводится (даже если открыт плейлист)
+    if (currentVideoId) {
+        url = generateShareLink();
+        feedbackElement = document.querySelector('.share-button');
+        successText = t('buttons.shareSuccess') || 'Link copied!';
+    } else if (currentPlaylistId) {
+        url = generatePlaylistLink();
+        feedbackElement = document.querySelector('.playlist-copy-button');
+        successText = t('buttons.playlistLinkCopied');
+    }
+    
+    if (!url) {
+        alert(currentPlaylistId ? 'No playlist is currently open' : 'Please play a video first');
+        return;
+    }
+    
+    await copyLink(url, feedbackElement, successText);
 }
 
 /**

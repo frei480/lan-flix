@@ -19,8 +19,10 @@
   "buttons": {
     "backToBrowse": "Назад к просмотру",
     "share": "Поделиться",
-    "shareWithTimecode": "Поделиться с тайм-кодом",
-    "shareSuccess": "Скопировано!"
+    "shareWithTimestamp": "Поделиться с текущей меткой времени",
+    "shareSuccess": "Скопировано!",
+    "playlistLinkCopied": "Ссылка на плейлист скопирована!",
+    "copyPlaylistLink": "Копировать ссылку на плейлист"
   },
   "section": {
     "videosPlaylists": "Видео и плейлисты"

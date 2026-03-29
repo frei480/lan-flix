@@ -496,29 +496,74 @@ html {
     flex-wrap: wrap;
 }
 
-.share-button {
-    display: flex;
+.copy-button {
+    display: inline-flex;
     align-items: center;
-    gap: 8px;
-    background: #e50914;
-    color: #fff;
-    border: none;
-    padding: 10px 16px;
-    border-radius: 4px;
+    justify-content: center;
+    background: transparent;
     cursor: pointer;
-    font-size: 14px;
-    transition: background-color 0.3s ease;
-    white-space: nowrap;
+    font-size: 12px;
+    padding: 4px 8px;
+    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    color: #c9d1d9;
 }
 
-.share-button:hover {
-    background: #c41612;
+.copy-button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.3);
 }
 
-.share-button:active {
-    background: #9e0f0f;
+.copy-button:active {
+    background-color: rgba(255, 255, 255, 0.15);
 }
 
+.copy-button.copied {
+    border-color: #4CAF50;
+    color: #4CAF50;
+    background-color: rgba(76, 175, 80, 0.1);
+}
+
+.btn-invisible {
+    background: transparent;
+    border: none;
+}
+
+.m-2 {
+    margin: 8px;
+}
+
+.p-0 {
+    padding: 0;
+}
+
+.d-flex {
+    display: flex;
+}
+
+.flex-justify-center {
+    justify-content: center;
+}
+
+.flex-items-center {
+    align-items: center;
+}
+
+.color-fg-success {
+    color: #3fb950;
+}
+
+/* Стили для иконок внутри кнопки копирования */
+.octicon {
+    fill: currentColor;
+}
+
+.js-clipboard-check-icon {
+    display: none;
+}
+
+/* Стили для временных элементов обратной связи копирования */
 .share-icon {
     font-size: 16px;
 }
@@ -527,9 +572,19 @@ html {
     display: inline-block;
 }
 
-.share-button.copied {
-    background: #4CAF50;
+.copy-button.copied .js-clipboard-copy-icon {
+    display: none;
 }
+
+.copy-button.copied .js-clipboard-check-icon {
+    display: block;
+}
+
+/* Скрытие элемента с классом d-none */
+.d-none {
+    display: none !important;
+}
+
 
 .close-modal {
     position: absolute;
