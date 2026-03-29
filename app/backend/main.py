@@ -16,6 +16,7 @@ from fastapi.openapi.docs import (
     get_swagger_ui_oauth2_redirect_html,
 )
 from fastapi.responses import StreamingResponse
+from tortoise import Tortoise
 from tortoise.contrib.fastapi import register_tortoise
 
 from app.backend import crud
@@ -73,6 +74,7 @@ async def lifespan(app: FastAPI):
     await crud.ensure_superuser_exists(cfg.username, cfg.password)
     yield
     print("[LIFESPAN] Shutting down")
+    await Tortoise.close_connections()
 
 
 app = FastAPI(title="Url shortener", docs_url=None, redoc_url=None, lifespan=lifespan)
