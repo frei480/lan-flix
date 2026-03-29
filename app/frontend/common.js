@@ -107,21 +107,46 @@ let isLoading=false;
 let hasMore=true;
 
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOMContentLoaded start');
     initInfiniteScroll();
-    fetchVideos();
-    fetchPlaylists();
     updateLanguageButtons();
-    handleUrlParams();
+    const params = getUrlParams();
+    console.log('URL params:', params);
     const videoRow = document.getElementById('video-row');
-        if (videoRow) {
-            videoRow.addEventListener('wheel', (e) => {
-                if (e.deltaY !== 0) {
-                    e.preventDefault();
-                    videoRow.scrollLeft += e.deltaY;
-                }
-            }, { passive: false });
-        }
+    if (videoRow) {
+        videoRow.addEventListener('wheel', (e) => {
+            if (e.deltaY !== 0) {
+                e.preventDefault();
+                videoRow.scrollLeft += e.deltaY;
+            }
+        }, { passive: false });
+    }
 
+    // Если есть параметр playlist, не загружаем все видео, сразу показываем плейлист
+    if (params.playlist) {
+        console.log('Playlist param detected, setting currentView to playlist_detail');
+        currentView = 'playlist_detail';
+        // Загружаем плейлисты, затем показываем нужный
+        fetchPlaylists().then(() => {
+            console.log('Playlists fetched, calling showPlaylistVideos for', params.playlist);
+            // Небольшая задержка для гарантии, что DOM готов
+            setTimeout(() => showPlaylistVideos(params.playlist), 0);
+        });
+        // Параметр video обрабатываем отдельно (если есть и video, и playlist - приоритет у playlist)
+        if (params.video) {
+            setTimeout(() => playVideo(params.video, params.t), 1000);
+        }
+    } else {
+        console.log('No playlist param, loading videos and playlists as usual');
+        // Нет playlist, загружаем видео и плейлисты как обычно
+        fetchVideos();
+        fetchPlaylists();
+        // Обрабатываем параметр video (если есть)
+        if (params.video) {
+            setTimeout(() => playVideo(params.video, params.t), 500);
+        }
+    }
+    console.log('DOMContentLoaded end');
 });
 
 /**
@@ -141,6 +166,7 @@ function initInfiniteScroll() {
         threshold: 0.1
     };
     const observer = new IntersectionObserver((entries) => {
+
         if (entries[0].isIntersecting && !isLoading && hasMore && currentView=='all')  {
             fetchVideos();
         }
@@ -212,7 +238,7 @@ async function fetchVideos() {
             renderItems(newVideos, 'video', true);
             allVideos.push(...newVideos);
             skip += newVideos.length;
-        } 
+        }
     } catch (error) {
         console.error(t('errors.loadVideos'), error);
         const row = document.getElementById('video-row');
@@ -287,6 +313,8 @@ async function showPlaylistVideos(playlistId) {
         
         currentView = 'playlist_detail';
 
+        toggleContentSection();
+        updateTabs('playlists');           
         document.getElementById('back-btn').style.display = 'flex';
         document.getElementById('playlist-name').innerHTML = `<h2>${playlist.name}</h2>`;
         
@@ -669,6 +697,7 @@ function getUrlParams() {
     const params = new URLSearchParams(window.location.search);
     return {
         video: params.get('video') ? parseInt(params.get('video'), 10) : null,
+        playlist: params.get('playlist') ? parseInt(params.get('playlist'), 10) : null,
         t: params.get('t') ? parseInt(params.get('t'), 10) : 0
     };
 }
@@ -682,6 +711,10 @@ function handleUrlParams() {
     if (params.video) {
         setTimeout(() => {
             playVideo(params.video, params.t);
+        }, 500);
+    } else if (params.playlist) {
+        setTimeout(() => {
+            showPlaylistVideos(params.playlist);
         }, 500);
     } else {
         console.log('No video parameter in URL');
