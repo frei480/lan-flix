@@ -22,8 +22,21 @@ wheels:
 	pip download \
 	-d wheels \
 	-r requirements.txt \
-	-d wheels \
 	--python-version 3.14 \
+	--only-binary=:all:
+		
+.PHONY: clean-wheels
+clean-wheels:
+	Remove-Item -Recurse -Force wheels
+
+.PHONY: wheels311
+wheels311:
+	uv pip compile pyproject.toml -o requirements311.txt --python-version 3.11
+	pip download -d wheels311 setuptools wheel pip --python-version 3.11 --only-binary=:all:
+	pip download \
+	-r requirements311.txt \
+	-d wheels311 \
+	--python-version 3.11 \
 	--only-binary=:all:
 		
 .PHONY: clean-wheels
